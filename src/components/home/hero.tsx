@@ -40,16 +40,16 @@ export function Hero() {
           transition={{ duration: 1, ease: EASE, delay: 0.2 }}
           className="eyebrow"
         >
-          Manufacturer &amp; Supplier
+          Wholesale Manufacturer &amp; Supplier
         </motion.p>
 
         <h1 className="mt-7 font-display font-light leading-[0.87] tracking-[-0.03em]">
           <span className="sr-only">
-            Leather, held to a higher standard.
+            Your label. Our production line.
           </span>
 
           <span aria-hidden="true" className="block">
-            {["Leather, held", "to a higher", "standard."].map((line, i) => (
+            {["Your label.", "Our", "production line."].map((line, i) => (
               <span key={i} className="block overflow-hidden pb-[0.06em]">
                 <motion.span
                   initial={{ y: "108%" }}
@@ -75,17 +75,17 @@ export function Hero() {
           className="mt-11 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between"
         >
           <p className="max-w-md text-[0.95rem] leading-relaxed text-ink-300">
-            Premium leather jackets, custom leather goods and sublimated
-            jerseys — cut, stitched and finished to your specification. One
-            piece or ten thousand.
+            Leather jackets, leather goods and sublimated jerseys, manufactured
+            to your specification and supplied at trade prices. Tiered
+            discounts from 12 units, produced under your own label.
           </p>
 
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/customize" variant="gold" size="lg">
-              Design Your Jacket
+            <ButtonLink href="/bulk" variant="gold" size="lg">
+              Request Trade Pricing
             </ButtonLink>
-            <ButtonLink href="/collections" variant="outline" size="lg">
-              View Collections
+            <ButtonLink href="/customize" variant="outline" size="lg">
+              Spec &amp; Price a Run
             </ButtonLink>
           </div>
         </motion.div>

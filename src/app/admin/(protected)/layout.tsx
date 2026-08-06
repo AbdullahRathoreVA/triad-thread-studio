@@ -63,11 +63,7 @@ export default async function AdminLayout({
           </p>
           <ul className="mt-3 space-y-1.5">
             {PLANNED.map((label) => (
-              <li
-                key={label}
-                className="px-3 text-[0.75rem] text-ink-600"
-                aria-disabled="true"
-              >
+              <li key={label} className="px-3 text-[0.75rem] text-ink-600">
                 {label}
               </li>
             ))}

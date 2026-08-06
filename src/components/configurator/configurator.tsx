@@ -7,6 +7,7 @@ import { Check, RotateCcw } from "lucide-react";
 import {
   OPTION_GROUPS,
   STEPS,
+  BULK_TIERS,
   MEASUREMENTS,
   LEATHERS,
   COLOURS,
@@ -61,7 +62,12 @@ export function Configurator() {
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [measurements, setMeasurements] = useState<Record<string, number>>({});
   const [instructions, setInstructions] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  // Defaults to the trade minimum, not 1. This is a wholesale supplier: the
+  // first number a buyer sees should already be a trade price, and a single
+  // unit is the exception rather than the assumption.
+  // Annotated `number`: BULK_TIERS is `as const`, so inference would otherwise
+  // pin the state type to the literal 12 and reject every later update.
+  const [quantity, setQuantity] = useState<number>(BULK_TIERS[1].minQty);
   const [coupon, setCoupon] = useState("");
   const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("silhouette");
   const [autoRotate, setAutoRotate] = useState(true);
@@ -118,6 +124,15 @@ export function Configurator() {
     };
   }, [selections]);
 
+  /** The next unreached tier, if the buyer is close enough for it to matter. */
+  const nextTier = useMemo(() => {
+    const candidate = BULK_TIERS.find((t) => t.minQty > quantity);
+    if (!candidate) return null;
+    // Only nudge within a sensible reach — "add 850 more" is noise.
+    const gap = candidate.minQty - quantity;
+    return gap <= Math.max(10, candidate.minQty * 0.25) ? candidate : null;
+  }, [quantity]);
+
   const stepGroups = OPTION_GROUPS.filter((g) => g.step === step);
   const missing = missingRequired(selections);
   const isMadeToMeasure = selections.size === "made-to-measure";
@@ -127,14 +142,22 @@ export function Configurator() {
     setTexts({});
     setMeasurements({});
     setInstructions("");
-    setQuantity(1);
+    setQuantity(BULK_TIERS[1].minQty);
     setCoupon("");
   };
 
+  // Desktop is a fixed-height, two-pane workspace that never scrolls as a page.
+  // The options column owns its own scroll, so the price bar sits at the bottom
+  // of the flex column instead of being `sticky` and painting over the options
+  // beneath it — which is what caused the overlapping panels.
+  //
+  // `h-[calc(100svh-74px)]` subtracts the fixed nav, and `min-h-0` on the
+  // scrolling child is what actually lets it scroll: without it a flex item
+  // defaults to min-height:auto and grows past its parent instead.
   return (
-    <div className="grid min-h-[100svh] lg:grid-cols-[1fr_minmax(420px,38%)]">
+    <div className="lg:grid lg:h-[calc(100svh-74px)] lg:grid-cols-[1fr_minmax(430px,38%)] lg:overflow-hidden">
       {/* ---- Preview ------------------------------------------------------ */}
-      <div className="relative min-h-[52svh] border-b border-hairline bg-ink-950 lg:sticky lg:top-0 lg:h-[100svh] lg:min-h-0 lg:border-b-0 lg:border-r">
+      <div className="relative h-[52svh] border-b border-hairline bg-ink-950 lg:h-full lg:border-b-0 lg:border-r">
         <ConfiguratorPreview appearance={appearance} autoRotate={autoRotate} />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-6 pt-24">
@@ -165,10 +188,10 @@ export function Configurator() {
       </div>
 
       {/* ---- Options ------------------------------------------------------ */}
-      <div className="flex flex-col bg-ink-900">
-        {/* Step rail */}
-        <div className="sticky top-0 z-20 border-b border-hairline bg-ink-900/95 px-6 pt-24 backdrop-blur-xl lg:pt-8">
-          <div className="flex gap-1 overflow-x-auto pb-4">
+      <div className="flex flex-col bg-ink-900 lg:h-full lg:min-h-0">
+        {/* Step rail — a flex sibling, not sticky, so it cannot overlap. */}
+        <div className="shrink-0 border-b border-hairline bg-ink-900 px-6 pt-6">
+          <div className="flex gap-1 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {STEPS.map((s) => {
               const isActive = s.id === step;
               return (
@@ -206,7 +229,7 @@ export function Configurator() {
           </div>
         </div>
 
-        <div className="flex-1 px-6 py-9">
+        <div className="flex-1 overflow-y-auto px-6 py-8 lg:min-h-0">
           {/* Keyed remount rather than AnimatePresence mode="wait".
               `mode="wait"` holds the incoming panel until the outgoing exit
               animation finishes, which makes the options unreachable whenever
@@ -263,8 +286,10 @@ export function Configurator() {
         </div>
 
         {/* ---- Price summary --------------------------------------------- */}
-        <div className="sticky bottom-0 border-t border-hairline bg-ink-850/97 backdrop-blur-xl">
-          <div className="max-h-52 overflow-y-auto px-6 pt-5">
+        <div className="shrink-0 border-t border-hairline bg-ink-850">
+          {/* Capped tight: on a 720px laptop every pixel here is taken from
+              the options list above, which is the part being used. */}
+          <div className="max-h-20 overflow-y-auto px-6 pt-4">
             <ul className="space-y-1.5">
               {breakdown.lineItems.map((item) => (
                 <li
@@ -285,7 +310,7 @@ export function Configurator() {
             </ul>
           </div>
 
-          <div className="space-y-2.5 px-6 py-4">
+          <div className="space-y-2 px-6 pb-5 pt-3">
             {breakdown.bulkDiscountCents > 0 && (
               <Row
                 label={`Bulk discount · ${breakdown.bulkTier.label}`}
@@ -309,10 +334,23 @@ export function Configurator() {
               }
             />
 
+            {/* Per-unit is the number a trade buyer compares on; the total is
+                what they budget. Both matter, so show both. */}
             <div className="flex items-end justify-between border-t border-hairline pt-4">
               <div>
-                <p className="eyebrow">Total</p>
-                <p className="mt-1 text-[0.68rem] text-ink-500">
+                <p className="eyebrow">
+                  {breakdown.quantity > 1 ? "Total" : "Price"}
+                </p>
+                <p className="mt-1 text-[0.68rem] tabular-nums text-gold-400">
+                  {formatPrice(
+                    Math.round(
+                      (breakdown.subtotalCents - breakdown.bulkDiscountCents) /
+                        breakdown.quantity,
+                    ),
+                  )}{" "}
+                  per unit
+                </p>
+                <p className="mt-0.5 text-[0.68rem] text-ink-500">
                   Est. {breakdown.leadTimeDays} working days
                 </p>
               </div>
@@ -321,7 +359,7 @@ export function Configurator() {
                 initial={{ opacity: 0.5, y: -3 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
-                className="font-display text-4xl tabular-nums text-gilt"
+                className="font-display text-3xl tabular-nums text-gilt"
               >
                 {formatPrice(breakdown.totalCents)}
               </motion.p>
@@ -377,6 +415,15 @@ export function Configurator() {
               </button>
             </div>
 
+            {/* Nudge toward the next tier. A buyer who is 3 units short of a
+                bigger discount should be told, not left to work it out. */}
+            {nextTier && (
+              <p className="text-[0.68rem] text-gold-400">
+                Add {nextTier.minQty - breakdown.quantity} more to reach{" "}
+                {nextTier.discountBps / 100}% off.
+              </p>
+            )}
+
             {breakdown.warnings.length > 0 && (
               <ul className="space-y-1 pt-1">
                 {breakdown.warnings.map((w) => (
@@ -389,8 +436,8 @@ export function Configurator() {
 
             <Button
               variant="gold"
-              size="lg"
-              className="mt-2 w-full"
+              size="md"
+              className="mt-1 w-full"
               disabled={missing.length > 0}
               onClick={() => setCheckoutOpen(true)}
             >

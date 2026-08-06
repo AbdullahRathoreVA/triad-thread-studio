@@ -26,7 +26,9 @@ export default function CustomizePage() {
         ]}
       />
       <Nav />
-      <main id="main">
+      {/* Offset the fixed 74px nav so the workspace sits below it rather than
+          underneath it. Without this the nav paints over the step rail. */}
+      <main id="main" className="pt-[74px]">
         <h1 className="sr-only">Custom jacket studio</h1>
         <Configurator />
       </main>

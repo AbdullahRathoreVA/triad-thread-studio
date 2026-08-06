@@ -7,6 +7,10 @@ import { Footer } from "@/components/layout/footer";
 import { Reveal } from "@/components/ui/reveal";
 import { ButtonLink } from "@/components/ui/button";
 import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import {
+  ProductRender,
+  ProductRenderRoot,
+} from "@/components/product/product-render";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 
@@ -117,6 +121,7 @@ export default async function CollectionPage({ params }: Params) {
           </Reveal>
         </section>
 
+        {/* One shared WebGL context for the whole grid — see ProductRenderRoot. */}
         {collection.products.length === 0 ? (
           <section className="border-t border-hairline">
             <div className="container-luxe py-24 text-center md:py-28">
@@ -140,6 +145,7 @@ export default async function CollectionPage({ params }: Params) {
             </div>
           </section>
         ) : (
+          <ProductRenderRoot>
           <section className="border-t border-hairline">
             <ul className="container-luxe grid gap-x-8 gap-y-14 py-14 sm:grid-cols-2 lg:grid-cols-3">
               {collection.products.map((product, i) => {
@@ -157,14 +163,24 @@ export default async function CollectionPage({ params }: Params) {
                             className="object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
                           />
                         ) : (
-                          // No photograph yet: show the product's own leather
-                          // colour rather than a grey "image missing" box.
-                          <div
-                            aria-hidden="true"
-                            className="grain absolute inset-0"
-                            style={{
-                              background: `radial-gradient(70% 70% at 50% 35%, ${product.leatherSwatch} 0%, #150905 60%, #0a0a0a 100%)`,
-                            }}
+                          /* No photograph: render the product in 3D from the
+                             same geometry and materials the configurator uses.
+                             Our own imagery, and it always matches what can
+                             actually be ordered. */
+                          <ProductRender
+                            className="absolute inset-0"
+                            spec={
+                              product.category === "SUBLIMATED_JERSEY"
+                                ? {
+                                    kind: "jersey",
+                                    primaryColour: product.leatherSwatch,
+                                  }
+                                : {
+                                    kind: "jacket",
+                                    leatherColour: product.leatherSwatch,
+                                    leatherGrain: product.leatherGrain,
+                                  }
+                            }
                           />
                         )}
                       </div>
@@ -186,6 +202,7 @@ export default async function CollectionPage({ params }: Params) {
               })}
             </ul>
           </section>
+          </ProductRenderRoot>
         )}
       </main>
       <Footer />

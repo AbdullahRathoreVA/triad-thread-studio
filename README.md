@@ -14,8 +14,8 @@ Every dependency is free-tier.
 |---|---|
 | Design system from measured brand palette | Complete |
 | Cinematic 3D hero, homepage | Complete |
-| Custom jacket configurator (26 option groups) | Complete |
-| Price engine + validation, 33 passing tests | Complete |
+| Configurator: leather jackets + sublimated jerseys | Complete |
+| Price engine + validation, 50 passing tests | Complete |
 | Order API with server-side price re-validation | Complete |
 | Checkout flow (review, form, confirmation) | Complete |
 | Database schema (18 models) | Complete |
@@ -24,7 +24,7 @@ Every dependency is free-tier.
 | SEO: metadata, JSON-LD, sitemap, robots | Complete |
 | Admin: products, collections, coupons, content CRUD | **Not built** |
 | Public pages: collections, bulk, craft, contact, legal | Complete |
-| Real product photography | **Not supplied** |
+| Product imagery: own 3D renders (no photos supplied) | Complete |
 
 `npm run verify` (typecheck + lint + test) and `npm run build` both pass.
 
@@ -52,9 +52,10 @@ instructions rather than an error.
 | `npm run dev` | Dev server on :3000 |
 | `npm run build` | Production build |
 | `npm run verify` | typecheck + lint + test |
-| `npm run test` | Pricing + validation test suites (33 tests) |
+| `npm run test` | Pricing, validation and geometry suites (50 tests) |
 | `npm run db:push` | Apply schema to the database |
-| `npm run db:seed` | Seed admin user, collections, FAQs |
+| `npm run db:seed` | Seed collections and FAQs |
+| `npm run admin:create` | Create or reset an admin login |
 | `npm run db:studio` | Prisma Studio |
 | `npm run check:placeholders` | **Launch gate** — fails while business details are unset |
 
@@ -140,4 +141,5 @@ are not used anywhere. See [docs/ASSETS.md](docs/ASSETS.md).
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Supabase, Vercel, Resend, Cloudinary setup
 - [docs/SECURITY.md](docs/SECURITY.md) — threat model and controls
 - [docs/ASSETS.md](docs/ASSETS.md) — photography requirements
+- [docs/ADMIN.md](docs/ADMIN.md) — admin login, access and what it does
 - [docs/ROADMAP.md](docs/ROADMAP.md) — what remains

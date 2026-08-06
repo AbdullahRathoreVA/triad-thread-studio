@@ -22,6 +22,9 @@ What exists, what does not, and the order I would build the rest in.
   `/privacy`, `/terms` — every nav and footer link now resolves
 - Enquiry intake: `POST /api/enquiries`, shared form, persisted before the
   notification email so an SMTP outage cannot lose a wholesale lead
+- Admin: order list with status filters and search, order detail with the
+  full cutting specification, guarded status transitions and audit history,
+  enquiry inbox with triage
 - 33 tests across pricing and validation
 - Prisma schema: 18 models covering catalogue, orders, CMS, auth, audit
 - Admin login, session, protected route group, overview dashboard

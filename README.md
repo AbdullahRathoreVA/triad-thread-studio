@@ -19,10 +19,10 @@ Every dependency is free-tier.
 | Order API with server-side price re-validation | Complete |
 | Checkout flow (review, form, confirmation) | Complete |
 | Database schema (18 models) | Complete |
-| Admin auth, session, gate, overview | Complete |
+| Admin: auth, overview, orders, order detail, enquiries | Complete |
 | Security headers, CSP, rate limiting | Complete |
 | SEO: metadata, JSON-LD, sitemap, robots | Complete |
-| Admin CRUD screens beyond Overview | **Not built** |
+| Admin: products, collections, coupons, content CRUD | **Not built** |
 | Public pages: collections, bulk, craft, contact, legal | Complete |
 | Real product photography | **Not supplied** |
 

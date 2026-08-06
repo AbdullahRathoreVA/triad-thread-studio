@@ -15,17 +15,19 @@ import { getCurrentAdmin } from "@/lib/auth";
  * to /admin/login again. A route group makes that structurally impossible.
  */
 
+/**
+ * Only routes that exist are linked. Sections still to be built are listed
+ * separately and are not clickable — a sidebar full of links to 404s makes an
+ * operator distrust the whole tool, and they cannot tell "broken" from
+ * "not built yet".
+ */
 const NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/collections", label: "Collections" },
   { href: "/admin/enquiries", label: "Enquiries" },
-  { href: "/admin/coupons", label: "Coupons" },
-  { href: "/admin/content", label: "Content" },
-  { href: "/admin/testimonials", label: "Testimonials" },
-  { href: "/admin/faqs", label: "FAQs" },
 ];
+
+const PLANNED = ["Products", "Collections", "Coupons", "Content", "FAQs"];
 
 export default async function AdminLayout({
   children,
@@ -52,6 +54,21 @@ export default async function AdminLayout({
                 >
                   {item.label}
                 </Link>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-8 font-roman text-[0.55rem] uppercase tracking-[0.2em] text-ink-600">
+            Coming next
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {PLANNED.map((label) => (
+              <li
+                key={label}
+                className="px-3 text-[0.75rem] text-ink-600"
+                aria-disabled="true"
+              >
+                {label}
               </li>
             ))}
           </ul>

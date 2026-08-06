@@ -113,7 +113,7 @@ export function JacketModel({
     [appearance.threadColour],
   );
 
-  const { torso, collar, sleeveL, sleeveR } = useMemo(() => {
+  const { torso, collar, sleeveL, sleeveR, lapel, hem } = useMemo(() => {
     const { bodyLength: L, looseness } = appearance;
     const halfL = L / 2;
 
@@ -184,11 +184,51 @@ export function JacketModel({
       return loft(rings, { capEnd: true });
     };
 
+    // ---- Lapels ---------------------------------------------------------
+    // A lapel genuinely IS a flat folded panel, so an extruded outline is the
+    // right primitive here — unlike the body, which needed lofting.
+    const lapelShape = new THREE.Shape();
+    lapelShape.moveTo(0, 0);
+    lapelShape.lineTo(0.34, 0.06);
+    lapelShape.lineTo(0.42, -0.34); // notch point
+    lapelShape.lineTo(0.2, -0.42);
+    lapelShape.lineTo(0.05, -0.9); // tapers down the chest
+    lapelShape.lineTo(-0.04, -0.86);
+    lapelShape.closePath();
+
+    const lapelGeo = new THREE.ExtrudeGeometry(lapelShape, {
+      depth: 0.035,
+      bevelEnabled: true,
+      bevelThickness: 0.012,
+      bevelSize: 0.012,
+      bevelSegments: 2,
+      curveSegments: 6,
+    });
+
+    // ---- Hem band -------------------------------------------------------
+    const hemRings: THREE.Vector3[][] = [];
+    for (let i = 0; i <= 4; i++) {
+      const t = i / 4;
+      const { rx, rz } = torsoProfile(0, looseness);
+      hemRings.push(
+        section({
+          radial: RADIAL,
+          rx: rx * mix(1.012, 0.975, t),
+          rz: rz * mix(1.012, 0.975, t),
+          y: -halfL - 0.16 + t * 0.17,
+          power: 2.6,
+        }),
+      );
+    }
+    const hemGeo = loft(hemRings, { capStart: true });
+
     return {
       torso: torsoGeo,
       collar: collarGeo,
       sleeveL: buildSleeve(-1),
       sleeveR: buildSleeve(1),
+      lapel: lapelGeo,
+      hem: hemGeo,
     };
   }, [appearance]);
 
@@ -206,6 +246,62 @@ export function JacketModel({
       <mesh geometry={collar} material={leather} castShadow />
       <mesh geometry={sleeveL} material={leather} castShadow />
       <mesh geometry={sleeveR} material={leather} castShadow />
+      <mesh geometry={hem} material={leather} castShadow />
+
+      {/* Notch lapels, mirrored and folded back off the chest. This is the
+          single detail that most makes a jacket read as a jacket. */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          geometry={lapel}
+          material={leather}
+          position={[side * 0.16, halfL - 0.06, 0.38]}
+          rotation={[0.12, side * -0.42, side * 0.08]}
+          scale={[side, 1, 1]}
+          castShadow
+        />
+      ))}
+
+      {/* Cuffs */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          material={leather}
+          position={[
+            side * (0.92 + appearance.looseness * 0.3 + 0.25),
+            halfL - 0.12 - appearance.bodyLength * 0.84,
+            0.05,
+          ]}
+        >
+          <cylinderGeometry
+            args={[
+              0.175 + appearance.looseness * 0.05,
+              0.165 + appearance.looseness * 0.05,
+              0.13,
+              28,
+              1,
+              true,
+            ]}
+          />
+        </mesh>
+      ))}
+
+      {/* Chest and hip pocket zips — small, but their absence is conspicuous. */}
+      {[
+        { x: 0.42, y: 0.18, len: 0.3, rot: 0.5 },
+        { x: -0.42, y: 0.18, len: 0.3, rot: -0.5 },
+        { x: 0.5, y: -halfL * 0.45, len: 0.36, rot: 0.35 },
+        { x: -0.5, y: -halfL * 0.45, len: 0.36, rot: -0.35 },
+      ].map((p, i) => (
+        <mesh
+          key={i}
+          material={hardware}
+          position={[p.x, p.y, 0.42]}
+          rotation={[0, 0, p.rot]}
+        >
+          <boxGeometry args={[0.022, p.len, 0.016]} />
+        </mesh>
+      ))}
 
       {/* Lining visible through the neck opening. */}
       <mesh material={lining} position={[0, halfL - 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>

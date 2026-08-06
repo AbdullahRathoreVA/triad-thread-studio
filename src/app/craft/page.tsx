@@ -5,6 +5,7 @@ import { Reveal, RevealLines } from "@/components/ui/reveal";
 import { ButtonLink } from "@/components/ui/button";
 import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { LEATHERS } from "@/config/configurator";
+import { site, PLACEHOLDER } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Craft",
@@ -159,6 +160,66 @@ export default function CraftPage() {
                   Build with these
                 </ButtonLink>
               </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ---- The people ------------------------------------------------- */}
+        <section className="border-t border-hairline py-24 md:py-32">
+          <div className="container-luxe grid gap-16 lg:grid-cols-[0.8fr_1.2fr]">
+            <Reveal>
+              <p className="eyebrow">Who You Deal With</p>
+              <h2 className="mt-6 font-display text-4xl leading-[1.05] text-ink-50">
+                Three owners, and you can reach any of us.
+              </h2>
+              <p className="mt-6 max-w-sm text-[0.9rem] leading-[1.85] text-ink-400">
+                Placing a production order with a supplier you have never met is
+                a risk. So here is who runs this workshop — not a contact form
+                behind a brand name.
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.12}>
+              <ul className="grid gap-px sm:grid-cols-3">
+                {site.owners.map((owner, i) => (
+                  <li
+                    key={owner.name}
+                    className="border-t border-hairline pr-6 pt-7"
+                  >
+                    <span className="font-roman text-[0.6rem] tracking-[0.24em] text-gold-300">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="mt-4 font-display text-xl leading-snug text-ink-50">
+                      {owner.name}
+                    </h3>
+                    <p className="mt-1.5 text-[0.72rem] text-ink-500">
+                      {owner.role}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+
+              {site.contact.email !== PLACEHOLDER && (
+                <div className="mt-12 border-t border-hairline pt-8">
+                  <p className="text-[0.8rem] text-ink-400">
+                    Direct line for trade enquiries:
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+                    <a
+                      href={`tel:${site.contact.phone.replace(/\s/g, "")}`}
+                      className="font-display text-2xl text-gold-200 transition-colors hover:text-gold-100"
+                    >
+                      {site.contact.phone}
+                    </a>
+                    <a
+                      href={`mailto:${site.contact.email}`}
+                      className="self-center text-[0.9rem] text-gold-200 transition-colors hover:text-gold-100"
+                    >
+                      {site.contact.email}
+                    </a>
+                  </div>
+                </div>
+              )}
             </Reveal>
           </div>
         </section>

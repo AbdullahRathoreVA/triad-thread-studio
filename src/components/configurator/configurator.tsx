@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, RotateCcw, ChevronDown } from "lucide-react";
 import {
   OPTION_GROUPS,
   STEPS,
@@ -72,6 +72,7 @@ export function Configurator() {
   const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("silhouette");
   const [autoRotate, setAutoRotate] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const select = useCallback((groupId: string, optionId: string) => {
     setSelections((prev) => ({ ...prev, [groupId]: optionId }));
@@ -285,16 +286,38 @@ export function Configurator() {
           </div>
         </div>
 
-        {/* ---- Price summary --------------------------------------------- */}
+        {/* ---- Price summary ---------------------------------------------
+            Collapsed by default. The itemised breakdown used to sit here
+            permanently and consumed roughly 60% of the panel, squeezing the
+            options list — the part actually being used — into a sliver. The
+            same breakdown is shown in full on the checkout review screen, so
+            keeping a second permanent copy here bought nothing.            */}
         <div className="shrink-0 border-t border-hairline bg-ink-850">
-          {/* Capped tight: on a 720px laptop every pixel here is taken from
-              the options list above, which is the part being used. */}
-          <div className="max-h-20 overflow-y-auto px-6 pt-4">
-            <ul className="space-y-1.5">
+          <button
+            type="button"
+            onClick={() => setBreakdownOpen((v) => !v)}
+            aria-expanded={breakdownOpen}
+            className="flex w-full items-center justify-between px-6 py-2.5 text-[0.7rem] text-ink-500 transition-colors hover:text-ink-200"
+          >
+            <span>
+              {breakdown.lineItems.length} line
+              {breakdown.lineItems.length === 1 ? "" : "s"} · view breakdown
+            </span>
+            <ChevronDown
+              size={14}
+              className={cn(
+                "transition-transform duration-300",
+                breakdownOpen && "rotate-180",
+              )}
+            />
+          </button>
+
+          {breakdownOpen && (
+            <div className="max-h-44 space-y-1.5 overflow-y-auto border-t border-hairline px-6 py-3">
               {breakdown.lineItems.map((item) => (
-                <li
+                <div
                   key={item.id + item.label}
-                  className="flex items-baseline justify-between gap-4 text-[0.75rem]"
+                  className="flex items-baseline justify-between gap-4 text-[0.72rem]"
                 >
                   <span className="text-ink-400">
                     {item.label}
@@ -305,38 +328,38 @@ export function Configurator() {
                   <span className="shrink-0 tabular-nums text-ink-300">
                     {formatPrice(item.cents)}
                   </span>
-                </li>
+                </div>
               ))}
-            </ul>
-          </div>
 
-          <div className="space-y-2 px-6 pb-5 pt-3">
-            {breakdown.bulkDiscountCents > 0 && (
+              {breakdown.bulkDiscountCents > 0 && (
+                <Row
+                  label={breakdown.bulkTier.label}
+                  value={`− ${formatPrice(breakdown.bulkDiscountCents)}`}
+                  accent
+                />
+              )}
+              {breakdown.couponDiscountCents > 0 && (
+                <Row
+                  label={`Coupon · ${breakdown.couponCode}`}
+                  value={`− ${formatPrice(breakdown.couponDiscountCents)}`}
+                  accent
+                />
+              )}
               <Row
-                label={`Bulk discount · ${breakdown.bulkTier.label}`}
-                value={`− ${formatPrice(breakdown.bulkDiscountCents)}`}
-                accent
+                label="Shipping"
+                value={
+                  breakdown.shippingCents === 0
+                    ? "Included"
+                    : formatPrice(breakdown.shippingCents)
+                }
               />
-            )}
-            {breakdown.couponDiscountCents > 0 && (
-              <Row
-                label={`Coupon · ${breakdown.couponCode}`}
-                value={`− ${formatPrice(breakdown.couponDiscountCents)}`}
-                accent
-              />
-            )}
-            <Row
-              label="Shipping"
-              value={
-                breakdown.shippingCents === 0
-                  ? "Included"
-                  : formatPrice(breakdown.shippingCents)
-              }
-            />
+            </div>
+          )}
 
+          <div className="space-y-2 border-t border-hairline px-6 pb-4 pt-3">
             {/* Per-unit is the number a trade buyer compares on; the total is
                 what they budget. Both matter, so show both. */}
-            <div className="flex items-end justify-between border-t border-hairline pt-4">
+            <div className="flex items-end justify-between">
               <div>
                 <p className="eyebrow">
                   {breakdown.quantity > 1 ? "Total" : "Price"}

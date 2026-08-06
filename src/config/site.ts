@@ -10,9 +10,55 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-export const PLACEHOLDER = "__PLACEHOLDER__" as const;
+export const PLACEHOLDER = "__PLACEHOLDER__";
 
-export const site = {
+/**
+ * Fields that may still hold PLACEHOLDER are typed as plain `string`, not as
+ * literals. With `as const` inference these narrow to the exact value once
+ * filled in, and every `=== PLACEHOLDER` guard across the site becomes a
+ * compile error for "impossible comparison" — which is precisely backwards,
+ * since those guards are what keep unset details off the page.
+ */
+type Fillable = string;
+
+type SiteContact = {
+  email: Fillable;
+  salesEmail: Fillable;
+  phone: Fillable;
+  whatsapp: Fillable;
+  addressLine1: Fillable;
+  city: Fillable;
+  region: Fillable;
+  postalCode: Fillable;
+  country: Fillable;
+  mapsUrl: Fillable;
+};
+
+type SiteSocial = {
+  instagram: Fillable;
+  facebook: Fillable;
+  linkedin: Fillable;
+  whatsapp: Fillable;
+};
+
+type SiteProduction = {
+  standardLeadTimeDays: Fillable;
+  bulkLeadTimeDays: Fillable;
+  minimumBulkQuantity: number;
+};
+
+export const site: {
+  name: string;
+  shortName: string;
+  tagline: string;
+  description: string;
+  url: string;
+  locale: string;
+  contact: SiteContact;
+  social: SiteSocial;
+  owners: { name: string; role: string }[];
+  production: SiteProduction;
+} = {
   name: "Triad Thread Studio",
   shortName: "Triad Thread",
   /** Tagline lifted verbatim from the supplied logo artwork. */
@@ -24,25 +70,39 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   locale: "en_US",
 
+  /** Supplied by the owners 6 Aug 2026. */
   contact: {
-    email: PLACEHOLDER,
-    salesEmail: PLACEHOLDER,
-    phone: PLACEHOLDER,
-    whatsapp: PLACEHOLDER,
+    email: "bilalatique050@gmail.com",
+    salesEmail: "bilalatique050@gmail.com",
+    phone: "+92 312 2031534",
+    // WhatsApp deep links need the number with no spaces or plus sign.
+    whatsapp: "https://wa.me/923122031534",
+    // Still unknown — a trade buyer checks a supplier's address before
+    // committing to a run, so this needs a real answer before launch.
     addressLine1: PLACEHOLDER,
     city: PLACEHOLDER,
     region: PLACEHOLDER,
     postalCode: PLACEHOLDER,
-    country: PLACEHOLDER,
+    country: "Pakistan",
     mapsUrl: PLACEHOLDER,
   },
 
+  /** Pending — the business pages are to be linked once they are live. */
   social: {
     instagram: PLACEHOLDER,
     facebook: PLACEHOLDER,
     linkedin: PLACEHOLDER,
-    whatsapp: PLACEHOLDER,
+    whatsapp: "https://wa.me/923122031534",
   },
+
+  /** The three owners. Named people are the strongest trust signal a B2B
+   *  supplier has — a buyer committing to a 500-unit run wants to know who
+   *  they are dealing with. */
+  owners: [
+    { name: "Muhammad Bilal Atique", role: "Co-founder" },
+    { name: "Kaif Zafar", role: "Co-founder" },
+    { name: "Abdul Hannan Soomro", role: "Co-founder" },
+  ],
 
   /**
    * Production timings quoted to customers. These drive the order confirmation
@@ -53,7 +113,7 @@ export const site = {
     bulkLeadTimeDays: PLACEHOLDER,
     minimumBulkQuantity: 12,
   },
-} as const;
+};
 
 export type NavLink = {
   label: string;

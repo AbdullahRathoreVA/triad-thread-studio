@@ -16,6 +16,9 @@ What exists, what does not, and the order I would build the rest in.
   bulk tiers, coupons, shipping thresholds, tax, lead-time accumulation
   (19 tests)
 - `POST /api/orders` with authoritative server-side re-pricing
+- Checkout: spec review, price breakdown, customer + shipping form sharing the
+  API's own Zod schemas, honest 409 `PRICE_MISMATCH` handling, confirmation
+  (11 validation tests)
 - Prisma schema: 18 models covering catalogue, orders, CMS, auth, audit
 - Admin login, session, protected route group, overview dashboard
 - Security headers, CSP, rate limiting, Zod validation
@@ -27,30 +30,21 @@ What exists, what does not, and the order I would build the rest in.
 
 ## Next, in order
 
-### 1. Checkout form — highest value
-The engine and the API both exist and are tested; there is no UI that posts to
-them. A customer can design a jacket and see a price but cannot yet order.
-
-Needs: customer + shipping fields (react-hook-form + the existing Zod schema),
-a review step showing the breakdown, `POST /api/orders`, and a confirmation
-page. Handle the 409 `PRICE_MISMATCH` explicitly — show the new total and ask
-the customer to confirm rather than silently re-charging.
-
-### 2. Catalogue pages
+### 1. Catalogue pages
 `/collections`, `/collections/[slug]`, `/products/[slug]`. Schema, JSON-LD
 emitters and sitemap wiring are already in place and expect these routes.
 Blocked on real products and photography.
 
-### 3. Admin CRUD
+### 2. Admin CRUD
 Overview exists; the remaining nav entries are stubs. Order detail with status
 transitions first — that is the screen the business actually runs on daily.
 Then products, collections, coupons, enquiries, content.
 
-### 4. Remaining public pages
+### 3. Remaining public pages
 `/craft`, `/bulk`, `/contact` (wire `enquirySchema` and
 `sendEnquiryNotification` — both already written), `/privacy`, `/terms`.
 
-### 5. Product 360° viewer
+### 4. Product 360° viewer
 `ProductImage.is360` exists in the schema. Straightforward frame-sequence
 viewer once turntable shots exist.
 

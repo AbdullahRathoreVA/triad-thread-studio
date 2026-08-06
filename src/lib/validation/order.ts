@@ -62,6 +62,38 @@ const measurementsSchema = z
   .strict()
   .optional();
 
+/**
+ * Customer and shipping shapes are exported separately so the checkout form
+ * validates against the exact same rules the API enforces. Two definitions
+ * would drift, and the drift always surfaces as a 422 the user cannot action.
+ */
+export const customerSchema = z.object({
+  name: z.string().trim().min(1, "Required").max(120),
+  email: z.string().trim().email("Enter a valid email").max(200).toLowerCase(),
+  phone: z.string().trim().max(40).optional(),
+  company: z.string().trim().max(160).optional(),
+});
+
+export const shippingSchema = z.object({
+  name: z.string().trim().min(1, "Required").max(120),
+  line1: z.string().trim().min(1, "Required").max(200),
+  line2: z.string().trim().max(200).optional(),
+  city: z.string().trim().min(1, "Required").max(120),
+  region: z.string().trim().max(120).optional(),
+  postal: z.string().trim().min(1, "Required").max(32),
+  country: z.string().trim().min(2, "Required").max(80),
+});
+
+/** What the checkout form itself collects. */
+export const checkoutFormSchema = z.object({
+  customer: customerSchema,
+  shipping: shippingSchema,
+  destination: z.enum(["domestic", "international"]),
+  specialInstructions: z.string().max(1000).optional(),
+});
+
+export type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
+
 export const orderRequestSchema = z.object({
   selections: selectionsSchema,
   texts: textsSchema,
@@ -72,22 +104,8 @@ export const orderRequestSchema = z.object({
   specialInstructions: z.string().max(1000).optional(),
   referenceImageUrl: z.string().url().max(500).optional(),
 
-  customer: z.object({
-    name: z.string().trim().min(1).max(120),
-    email: z.string().trim().email().max(200).toLowerCase(),
-    phone: z.string().trim().max(40).optional(),
-    company: z.string().trim().max(160).optional(),
-  }),
-
-  shipping: z.object({
-    name: z.string().trim().min(1).max(120),
-    line1: z.string().trim().min(1).max(200),
-    line2: z.string().trim().max(200).optional(),
-    city: z.string().trim().min(1).max(120),
-    region: z.string().trim().max(120).optional(),
-    postal: z.string().trim().min(1).max(32),
-    country: z.string().trim().min(2).max(80),
-  }),
+  customer: customerSchema,
+  shipping: shippingSchema,
 
   /**
    * What the browser believes the total is. NOT trusted — the server recomputes
@@ -97,8 +115,15 @@ export const orderRequestSchema = z.object({
    */
   expectedTotalCents: z.number().int().min(0),
 
-  /** Honeypot. Real users never fill a hidden field. */
-  website: z.string().max(0).optional(),
+  /**
+   * Honeypot. Real users never fill a hidden field.
+   *
+   * Deliberately permissive — it must PASS validation so the route handler can
+   * return a convincing fake success. A `.max(0)` here would reject the request
+   * with a 422 naming this exact field, which teaches a bot precisely which
+   * input to leave alone and makes the trap worse than useless.
+   */
+  website: z.string().max(200).optional(),
 });
 
 export type OrderRequest = z.infer<typeof orderRequestSchema>;

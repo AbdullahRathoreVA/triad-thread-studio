@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { Check, RotateCcw, Loader2 } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import {
   OPTION_GROUPS,
   STEPS,
@@ -26,6 +26,7 @@ import {
 } from "@/lib/pricing/engine";
 import { formatPrice, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Checkout } from "./checkout";
 import type { JacketAppearance } from "./jacket-model";
 
 const ConfiguratorPreview = dynamic(
@@ -64,7 +65,7 @@ export function Configurator() {
   const [coupon, setCoupon] = useState("");
   const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("silhouette");
   const [autoRotate, setAutoRotate] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const select = useCallback((groupId: string, optionId: string) => {
     setSelections((prev) => ({ ...prev, [groupId]: optionId }));
@@ -390,20 +391,28 @@ export function Configurator() {
               variant="gold"
               size="lg"
               className="mt-2 w-full"
-              disabled={missing.length > 0 || submitting}
-              onClick={() => setSubmitting(true)}
+              disabled={missing.length > 0}
+              onClick={() => setCheckoutOpen(true)}
             >
-              {submitting ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : missing.length > 0 ? (
-                `Choose ${missing[0].label}`
-              ) : (
-                "Review & Order"
-              )}
+              {missing.length > 0
+                ? `Choose ${missing[0].label}`
+                : "Review & Order"}
             </Button>
           </div>
         </div>
       </div>
+
+      {checkoutOpen && (
+        <Checkout
+          selections={selections}
+          texts={texts}
+          measurements={measurements}
+          instructions={instructions}
+          quantity={quantity}
+          couponCode={coupon}
+          onClose={() => setCheckoutOpen(false)}
+        />
+      )}
     </div>
   );
 }

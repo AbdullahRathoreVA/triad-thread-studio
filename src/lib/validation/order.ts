@@ -137,5 +137,6 @@ export const enquirySchema = z.object({
   message: z.string().trim().min(10).max(4000),
   quantity: z.number().int().min(1).max(1_000_000).optional(),
   type: z.enum(["GENERAL", "WHOLESALE", "CUSTOM", "SUPPORT"]).default("GENERAL"),
-  website: z.string().max(0).optional(),
+  /** Honeypot — must pass validation. See the note on orderRequestSchema.website. */
+  website: z.string().max(200).optional(),
 });

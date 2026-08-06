@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { orderRequestSchema, checkoutFormSchema } from "./order";
+import { orderRequestSchema, checkoutFormSchema, enquirySchema } from "./order";
 
 const validSelections = {
   gender: "mens",
@@ -115,6 +115,34 @@ describe("order request validation", () => {
       "honeypot must not be rejected by the schema",
     );
     if (result.success) assert.equal(result.data.website, "http://spam.example");
+  });
+});
+
+describe("enquiry validation", () => {
+  const validEnquiry = {
+    name: "A Retailer",
+    email: "buyer@shop.example",
+    message: "We would like to discuss a 500-unit run for next season.",
+  };
+
+  test("accepts a well-formed enquiry and defaults the type", () => {
+    const result = enquirySchema.safeParse(validEnquiry);
+    assert.equal(result.success, true);
+    if (result.success) assert.equal(result.data.type, "GENERAL");
+  });
+
+  test("rejects a message too short to be actionable", () => {
+    const result = enquirySchema.safeParse({ ...validEnquiry, message: "hi" });
+    assert.equal(result.success, false);
+  });
+
+  /** Same regression guard as the order honeypot — see the note there. */
+  test("honeypot passes validation so the handler can fake success", () => {
+    const result = enquirySchema.safeParse({
+      ...validEnquiry,
+      website: "http://spam.example",
+    });
+    assert.equal(result.success, true);
   });
 });
 

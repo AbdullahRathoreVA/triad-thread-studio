@@ -15,7 +15,7 @@ Every dependency is free-tier.
 | Design system from measured brand palette | Complete |
 | Cinematic 3D hero, homepage | Complete |
 | Custom jacket configurator (26 option groups) | Complete |
-| Price engine + validation, 30 passing tests | Complete |
+| Price engine + validation, 33 passing tests | Complete |
 | Order API with server-side price re-validation | Complete |
 | Checkout flow (review, form, confirmation) | Complete |
 | Database schema (18 models) | Complete |
@@ -23,7 +23,7 @@ Every dependency is free-tier.
 | Security headers, CSP, rate limiting | Complete |
 | SEO: metadata, JSON-LD, sitemap, robots | Complete |
 | Admin CRUD screens beyond Overview | **Not built** |
-| Product / collection / craft / contact pages | **Not built** |
+| Public pages: collections, bulk, craft, contact, legal | Complete |
 | Real product photography | **Not supplied** |
 
 `npm run verify` (typecheck + lint + test) and `npm run build` both pass.
@@ -52,7 +52,7 @@ instructions rather than an error.
 | `npm run dev` | Dev server on :3000 |
 | `npm run build` | Production build |
 | `npm run verify` | typecheck + lint + test |
-| `npm run test` | Pricing + validation test suites (30 tests) |
+| `npm run test` | Pricing + validation test suites (33 tests) |
 | `npm run db:push` | Apply schema to the database |
 | `npm run db:seed` | Seed admin user, collections, FAQs |
 | `npm run db:studio` | Prisma Studio |

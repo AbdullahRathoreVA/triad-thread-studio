@@ -18,7 +18,11 @@ What exists, what does not, and the order I would build the rest in.
 - `POST /api/orders` with authoritative server-side re-pricing
 - Checkout: spec review, price breakdown, customer + shipping form sharing the
   API's own Zod schemas, honest 409 `PRICE_MISMATCH` handling, confirmation
-  (11 validation tests)
+- Public pages: `/collections` (+ `[slug]`), `/bulk`, `/craft`, `/contact`,
+  `/privacy`, `/terms` — every nav and footer link now resolves
+- Enquiry intake: `POST /api/enquiries`, shared form, persisted before the
+  notification email so an SMTP outage cannot lose a wholesale lead
+- 33 tests across pricing and validation
 - Prisma schema: 18 models covering catalogue, orders, CMS, auth, audit
 - Admin login, session, protected route group, overview dashboard
 - Security headers, CSP, rate limiting, Zod validation
@@ -30,21 +34,16 @@ What exists, what does not, and the order I would build the rest in.
 
 ## Next, in order
 
-### 1. Catalogue pages
-`/collections`, `/collections/[slug]`, `/products/[slug]`. Schema, JSON-LD
-emitters and sitemap wiring are already in place and expect these routes.
-Blocked on real products and photography.
-
-### 2. Admin CRUD
+### 1. Admin CRUD
 Overview exists; the remaining nav entries are stubs. Order detail with status
 transitions first — that is the screen the business actually runs on daily.
 Then products, collections, coupons, enquiries, content.
 
-### 3. Remaining public pages
-`/craft`, `/bulk`, `/contact` (wire `enquirySchema` and
-`sendEnquiryNotification` — both already written), `/privacy`, `/terms`.
+### 2. Product detail pages
+`/products/[slug]`. The collection grid already links to them and the
+`ProductJsonLd` emitter is written. Blocked on real products and photography.
 
-### 4. Product 360° viewer
+### 3. Product 360° viewer
 `ProductImage.is360` exists in the schema. Straightforward frame-sequence
 viewer once turntable shots exist.
 

@@ -238,6 +238,124 @@ export function createLeatherMaps({
   return maps;
 }
 
+/**
+ * Performance jersey fabric.
+ *
+ * A knit is a regular weave, not a cell structure, so this is a different
+ * generator rather than leather with the dial turned down: interlaced warp and
+ * weft with per-thread variation, plus optional mesh perforations. Matte
+ * throughout — a jersey that catches light like leather looks like plastic.
+ */
+export function createFabricMaps({
+  color,
+  weave = 5,
+  mesh = false,
+  size = 512,
+}: {
+  color: string;
+  /** Thread pitch in pixels. Smaller = finer knit. */
+  weave?: number;
+  /** Punch micro-holes, for mesh fabrics. */
+  mesh?: boolean;
+  size?: number;
+}): CachedMaps {
+  const key = `fabric|${color}|${weave}|${mesh}|${size}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+
+  const rand = mulberry32(9091);
+  const base = hexToRgb(color);
+
+  const make = () => {
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    return c;
+  };
+
+  const albedoCanvas = make();
+  const actx = albedoCanvas.getContext("2d")!;
+  const albedo = actx.createImageData(size, size);
+
+  const normalCanvas = make();
+  const nctx = normalCanvas.getContext("2d")!;
+  const normal = nctx.createImageData(size, size);
+
+  const roughCanvas = make();
+  const rctx = roughCanvas.getContext("2d")!;
+  const rough = rctx.createImageData(size, size);
+
+  // Per-thread brightness jitter, so the weave is not a perfect grid.
+  const threadJitter = new Float32Array(Math.ceil(size / weave) + 2);
+  for (let i = 0; i < threadJitter.length; i++) threadJitter[i] = rand() * 0.12 - 0.06;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = y * size + x;
+      const o = i * 4;
+
+      const warp = Math.floor(x / weave);
+      const weft = Math.floor(y / weave);
+      // Interlace: alternate which thread sits on top.
+      const over = (warp + weft) % 2 === 0;
+
+      const withinX = (x % weave) / weave - 0.5;
+      const withinY = (y % weave) / weave - 0.5;
+      // Rounded thread cross-section gives the shading its ribbed look.
+      const bulge = over
+        ? 1 - Math.abs(withinY) * 1.6
+        : 1 - Math.abs(withinX) * 1.6;
+
+      const jitter = threadJitter[over ? warp : weft];
+      const shade = 0.86 + bulge * 0.2 + jitter;
+
+      const hole = mesh && ((warp % 3 === 0 && weft % 3 === 0) ? 0.72 : 1);
+      const factor = shade * (hole || 1);
+
+      albedo.data[o] = Math.min(255, base.r * factor);
+      albedo.data[o + 1] = Math.min(255, base.g * factor);
+      albedo.data[o + 2] = Math.min(255, base.b * factor);
+      albedo.data[o + 3] = 255;
+
+      // Technical knits are uniformly matte; only the thread crowns lift.
+      const r = Math.min(1, Math.max(0, 0.86 - bulge * 0.1));
+      rough.data[o] = rough.data[o + 1] = rough.data[o + 2] = r * 255;
+      rough.data[o + 3] = 255;
+
+      // Normals follow the thread direction rather than a height field —
+      // cheaper and more accurate for a regular weave.
+      const nx = over ? 0 : withinX * 1.8;
+      const ny = over ? withinY * 1.8 : 0;
+      const len = Math.hypot(nx, ny, 1);
+      normal.data[o] = ((nx / len) * 0.5 + 0.5) * 255;
+      normal.data[o + 1] = ((ny / len) * 0.5 + 0.5) * 255;
+      normal.data[o + 2] = ((1 / len) * 0.5 + 0.5) * 255;
+      normal.data[o + 3] = 255;
+    }
+  }
+
+  actx.putImageData(albedo, 0, 0);
+  nctx.putImageData(normal, 0, 0);
+  rctx.putImageData(rough, 0, 0);
+
+  const finish = (canvas: HTMLCanvasElement, srgb: boolean) => {
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 8;
+    if (srgb) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  };
+
+  const maps: CachedMaps = {
+    map: finish(albedoCanvas, true),
+    normalMap: finish(normalCanvas, false),
+    roughnessMap: finish(roughCanvas, false),
+  };
+
+  cache.set(key, maps);
+  return maps;
+}
+
 export function disposeLeatherCache() {
   for (const maps of cache.values()) {
     maps.map.dispose();

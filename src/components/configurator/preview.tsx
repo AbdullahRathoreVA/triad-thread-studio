@@ -5,7 +5,9 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { JacketModel, type JacketAppearance } from "./jacket-model";
+import { JerseyModel, type JerseyAppearance } from "./jersey-model";
 import { useWebGLSupport } from "@/hooks/use-environment";
+import type { ProductType } from "@/config/configurator";
 
 /** Same locally-built studio rig as the hero — no remote HDRI fetch. */
 function StudioRig() {
@@ -36,10 +38,14 @@ function StaticPreview({ colour }: { colour: string }) {
 }
 
 export function ConfiguratorPreview({
+  productType,
   appearance,
+  jerseyAppearance,
   autoRotate,
 }: {
+  productType: ProductType;
   appearance: JacketAppearance;
+  jerseyAppearance: JerseyAppearance;
   autoRotate: boolean;
 }) {
   // Reduced-motion users still get the 3D model — it is the product itself,
@@ -47,7 +53,15 @@ export function ConfiguratorPreview({
   const supported = useWebGLSupport();
 
   if (!supported) {
-    return <StaticPreview colour={appearance.leatherColour} />;
+    return (
+      <StaticPreview
+        colour={
+          productType === "jersey"
+            ? jerseyAppearance.primaryColour
+            : appearance.leatherColour
+        }
+      />
+    );
   }
 
   return (
@@ -66,7 +80,11 @@ export function ConfiguratorPreview({
     >
       <Suspense fallback={null}>
         <StudioRig />
-        <JacketModel appearance={appearance} autoRotate={autoRotate} />
+        {productType === "jersey" ? (
+          <JerseyModel appearance={jerseyAppearance} autoRotate={autoRotate} />
+        ) : (
+          <JacketModel appearance={appearance} autoRotate={autoRotate} />
+        )}
         <ContactShadows
           position={[0, -1.75, 0]}
           opacity={0.55}

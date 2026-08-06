@@ -5,10 +5,15 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Check, RotateCcw, ChevronDown } from "lucide-react";
 import {
-  OPTION_GROUPS,
   STEPS,
   BULK_TIERS,
   MEASUREMENTS,
+  PRODUCT_TYPES,
+  JERSEY_FABRICS,
+  JERSEY_STYLES,
+  groupsFor,
+  stepsFor,
+  type ProductType,
   LEATHERS,
   COLOURS,
   FINISHES,
@@ -29,11 +34,25 @@ import { formatPrice, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkout } from "./checkout";
 import type { JacketAppearance } from "./jacket-model";
+import type { JerseyAppearance } from "./jersey-model";
 
 const ConfiguratorPreview = dynamic(
   () => import("./preview").then((m) => m.ConfiguratorPreview),
   { ssr: false },
 );
+
+/** Sensible opening spec so the buyer sees a complete jersey immediately. */
+const JERSEY_DEFAULTS: Selections = {
+  style: "football",
+  fit: "athletic",
+  fabric: "poly-interlock",
+  sleeves: "short",
+  collar: "crew",
+  print: "front-back",
+  numbers: "back",
+  names: "none",
+  size: "size-run",
+};
 
 /** Sensible opening spec so the customer sees a complete jacket immediately. */
 const DEFAULTS: Selections = {
@@ -58,7 +77,13 @@ function find(list: Option[], id: unknown): Option | undefined {
 }
 
 export function Configurator() {
+  const [productType, setProductType] = useState<ProductType>("jacket");
   const [selections, setSelections] = useState<Selections>(DEFAULTS);
+  /** Jersey colours are picked directly, not from a fixed leather palette. */
+  const [jerseyColours, setJerseyColours] = useState({
+    primary: "#8a1f22",
+    secondary: "#f2eee7",
+  });
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [measurements, setMeasurements] = useState<Record<string, number>>({});
   const [instructions, setInstructions] = useState("");
@@ -83,13 +108,35 @@ export function Configurator() {
   const breakdown = useMemo(
     () =>
       calculatePrice({
+        productType,
         selections,
         quantity,
         texts,
         couponCode: coupon || undefined,
       }),
-    [selections, quantity, texts, coupon],
+    [productType, selections, quantity, texts, coupon],
   );
+
+  /** Switching product resets to that product's own defaults. */
+  const switchProduct = useCallback((next: ProductType) => {
+    setProductType(next);
+    setSelections(next === "jersey" ? JERSEY_DEFAULTS : DEFAULTS);
+    setTexts({});
+    setMeasurements({});
+    setStep("silhouette");
+  }, []);
+
+  const jerseyAppearance: JerseyAppearance = useMemo(() => {
+    const fabric = find(JERSEY_FABRICS, selections.fabric);
+    return {
+      primaryColour: jerseyColours.primary,
+      secondaryColour: jerseyColours.secondary,
+      fabricWeave: fabric?.id === "poly-mesh" ? 7 : fabric?.id === "poly-spandex" ? 4 : 5,
+      mesh: fabric?.id === "poly-mesh",
+      sleeve: (selections.sleeves as string) ?? "short",
+      collar: (selections.collar as string) ?? "crew",
+    };
+  }, [selections, jerseyColours]);
 
   const appearance: JacketAppearance = useMemo(() => {
     const leather = find(LEATHERS, selections.leather);
@@ -134,12 +181,14 @@ export function Configurator() {
     return gap <= Math.max(10, candidate.minQty * 0.25) ? candidate : null;
   }, [quantity]);
 
-  const stepGroups = OPTION_GROUPS.filter((g) => g.step === step);
-  const missing = missingRequired(selections);
+  const activeGroups = groupsFor(productType);
+  const activeSteps = useMemo(() => stepsFor(productType), [productType]);
+  const stepGroups = activeGroups.filter((g) => g.step === step);
+  const missing = missingRequired(selections, productType);
   const isMadeToMeasure = selections.size === "made-to-measure";
 
   const reset = () => {
-    setSelections(DEFAULTS);
+    setSelections(productType === "jersey" ? JERSEY_DEFAULTS : DEFAULTS);
     setTexts({});
     setMeasurements({});
     setInstructions("");
@@ -159,14 +208,24 @@ export function Configurator() {
     <div className="lg:grid lg:h-[calc(100svh-74px)] lg:grid-cols-[1fr_minmax(430px,38%)] lg:overflow-hidden">
       {/* ---- Preview ------------------------------------------------------ */}
       <div className="relative h-[52svh] border-b border-hairline bg-ink-950 lg:h-full lg:border-b-0 lg:border-r">
-        <ConfiguratorPreview appearance={appearance} autoRotate={autoRotate} />
+        <ConfiguratorPreview
+          productType={productType}
+          appearance={appearance}
+          jerseyAppearance={jerseyAppearance}
+          autoRotate={autoRotate}
+        />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-6 pt-24">
           <div className="glass pointer-events-auto rounded-sm px-4 py-3">
             <p className="eyebrow">Your Specification</p>
             <p className="mt-1.5 font-display text-xl text-ink-50">
-              {find(STYLES, selections.style)?.label ?? "Custom"} ·{" "}
-              {find(LEATHERS, selections.leather)?.label ?? ""}
+              {productType === "jersey"
+                ? `${find(JERSEY_STYLES, selections.style)?.label ?? "Jersey"} · ${
+                    find(JERSEY_FABRICS, selections.fabric)?.label ?? ""
+                  }`
+                : `${find(STYLES, selections.style)?.label ?? "Custom"} · ${
+                    find(LEATHERS, selections.leather)?.label ?? ""
+                  }`}
             </p>
           </div>
 
@@ -191,9 +250,35 @@ export function Configurator() {
       {/* ---- Options ------------------------------------------------------ */}
       <div className="flex flex-col bg-ink-900 lg:h-full lg:min-h-0">
         {/* Step rail — a flex sibling, not sticky, so it cannot overlap. */}
-        <div className="shrink-0 border-b border-hairline bg-ink-900 px-6 pt-6">
+        <div className="shrink-0 border-b border-hairline bg-ink-900 px-6 pt-5">
+          {/* Product switch — the two lines have completely different option
+              sets, pricing and 3D models, so this resets rather than merges. */}
+          <div
+            role="tablist"
+            aria-label="Product type"
+            className="mb-4 flex gap-1 rounded-xs border border-hairline p-1"
+          >
+            {PRODUCT_TYPES.map((p) => (
+              <button
+                key={p.id}
+                role="tab"
+                aria-selected={productType === p.id}
+                type="button"
+                onClick={() => switchProduct(p.id)}
+                className={cn(
+                  "flex-1 rounded-xs px-3 py-2 text-[0.72rem] transition-colors",
+                  productType === p.id
+                    ? "bg-gold-300/12 text-gold-100"
+                    : "text-ink-400 hover:text-ink-100",
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-1 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {STEPS.map((s) => {
+            {activeSteps.map((s) => {
               const isActive = s.id === step;
               return (
                 <button
@@ -244,6 +329,49 @@ export function Configurator() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-11"
             >
+              {/* Team colours are free-choice, not a fixed palette — a club
+                  has its own colours and will not accept the nearest match. */}
+              {productType === "jersey" && step === "material" && (
+                <fieldset>
+                  <legend className="font-roman text-[0.62rem] uppercase tracking-[0.22em] text-ink-200">
+                    Team colours
+                  </legend>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    {(
+                      [
+                        { key: "primary", label: "Primary" },
+                        { key: "secondary", label: "Trim & collar" },
+                      ] as const
+                    ).map(({ key, label }) => (
+                      <label
+                        key={key}
+                        className="flex items-center gap-3 rounded-xs border border-hairline p-3"
+                      >
+                        <input
+                          type="color"
+                          value={jerseyColours[key]}
+                          onChange={(e) =>
+                            setJerseyColours((c) => ({ ...c, [key]: e.target.value }))
+                          }
+                          className="size-8 cursor-pointer rounded-xs border-0 bg-transparent p-0"
+                          aria-label={`${label} colour`}
+                        />
+                        <span className="text-[0.75rem] text-ink-200">
+                          {label}
+                          <span className="mt-0.5 block font-mono text-[0.62rem] uppercase text-ink-500">
+                            {jerseyColours[key]}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-[0.68rem] text-ink-500">
+                    Sublimation reproduces any colour, so these are exact — send
+                    us Pantone references and we will match them on press.
+                  </p>
+                </fieldset>
+              )}
+
               {stepGroups.map((group) => (
                 <OptionGroupControl
                   key={group.id}

@@ -1,11 +1,13 @@
 import {
-  OPTION_GROUPS,
+  groupsFor,
   STYLES,
+  JERSEY_STYLES,
   BULK_TIERS,
   BASE_LEAD_TIME_DAYS,
   SHIPPING,
   type Option,
   type OptionGroup,
+  type ProductType,
 } from "@/config/configurator";
 
 /**
@@ -31,6 +33,8 @@ export type Selections = Record<string, string | string[] | undefined>;
 export type Measurements = Partial<Record<string, number>>;
 
 export type PriceInput = {
+  /** Defaults to "jacket" so existing callers are unaffected. */
+  productType?: ProductType;
   selections: Selections;
   quantity: number;
   /**
@@ -77,10 +81,6 @@ export type PriceBreakdown = {
   warnings: string[];
 };
 
-const groupById = new Map<string, OptionGroup>(
-  OPTION_GROUPS.map((g) => [g.id, g]),
-);
-
 function findOption(group: OptionGroup, id: string | undefined): Option | undefined {
   if (!id || !group.options) return undefined;
   return group.options.find((o) => o.id === id);
@@ -109,11 +109,16 @@ export function calculatePrice(
   const warnings: string[] = [];
   const lineItems: LineItem[] = [];
 
+  const productType = input.productType ?? "jacket";
+  const groups = groupsFor(productType);
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+  const styleSet = productType === "jersey" ? JERSEY_STYLES : STYLES;
+
   const quantity = Math.max(1, Math.floor(input.quantity || 1));
 
   // ---- 1. Base -----------------------------------------------------------
   const styleId = input.selections.style;
-  const style = STYLES.find((s) => s.id === styleId);
+  const style = styleSet.find((s) => s.id === styleId);
 
   if (!style) {
     // Cheapest style as a floor, so the UI always has a number to show while
@@ -121,7 +126,7 @@ export function calculatePrice(
     warnings.push("No style selected; showing the entry-level base price.");
   }
 
-  const resolvedStyle = style ?? STYLES.reduce((a, b) =>
+  const resolvedStyle = style ?? styleSet.reduce((a, b) =>
     (a.price as { cents: number }).cents <= (b.price as { cents: number }).cents ? a : b,
   );
 
@@ -137,9 +142,13 @@ export function calculatePrice(
 
   let leadTimeDays = BASE_LEAD_TIME_DAYS + (resolvedStyle.leadTimeDays ?? 0);
 
-  // ---- 2. Leather multiplier (applies to base only) ----------------------
-  const leatherGroup = groupById.get("leather")!;
-  const leather = findOption(leatherGroup, input.selections.leather as string);
+  // ---- 2. Material multiplier (applies to base only) ---------------------
+  // Leather for jackets, fabric for jerseys — same rule, different group.
+  const materialGroupId = productType === "jersey" ? "fabric" : "leather";
+  const materialGroup = groupById.get(materialGroupId);
+  const leather = materialGroup
+    ? findOption(materialGroup, input.selections[materialGroupId] as string)
+    : undefined;
 
   let leatherAdjustment = 0;
   if (leather && leather.price.kind === "multiplyBase") {
@@ -148,7 +157,7 @@ export function calculatePrice(
     leatherAdjustment = Math.round(baseCents * leather.price.factor) - baseCents;
     if (leatherAdjustment !== 0) {
       lineItems.push({
-        id: "leather",
+        id: materialGroupId,
         label: leather.label,
         detail: `${leather.price.factor > 1 ? "+" : ""}${Math.round(
           (leather.price.factor - 1) * 100,
@@ -162,8 +171,8 @@ export function calculatePrice(
   // ---- 3. Flat adders across every remaining group ------------------------
   let addersCents = 0;
 
-  for (const group of OPTION_GROUPS) {
-    if (group.id === "style" || group.id === "leather") continue;
+  for (const group of groups) {
+    if (group.id === "style" || group.id === materialGroupId) continue;
 
     if (group.type === "single") {
       const selected = findOption(group, input.selections[group.id] as string);
@@ -285,8 +294,11 @@ export function calculatePrice(
 }
 
 /** Groups still missing a required selection. Drives the "can submit" gate. */
-export function missingRequired(selections: Selections): OptionGroup[] {
-  return OPTION_GROUPS.filter(
+export function missingRequired(
+  selections: Selections,
+  productType: ProductType = "jacket",
+): OptionGroup[] {
+  return groupsFor(productType).filter(
     (g) => g.required && g.type === "single" && !selections[g.id],
   );
 }

@@ -284,6 +284,153 @@ export const MEASUREMENTS = [
   { id: "neck", label: "Neck", min: 25, max: 60 },
 ] as const;
 
+/* ==========================================================================
+   SUBLIMATED JERSEYS
+   A separate line with its own economics: cheap per unit, priced almost
+   entirely on print coverage and per-name/number personalisation, and sold
+   in team-sized runs rather than singles.
+   ========================================================================== */
+
+export const JERSEY_STYLES: Option[] = [
+  {
+    id: "football",
+    label: "Football / Soccer",
+    description: "Standard fit, short sleeve, crew or V neck.",
+    price: { kind: "add", cents: 2_400 },
+  },
+  {
+    id: "basketball",
+    label: "Basketball",
+    description: "Sleeveless, deep armhole, matching shorts available.",
+    price: { kind: "add", cents: 2_600 },
+  },
+  {
+    id: "cricket",
+    label: "Cricket",
+    description: "Collared, long or short sleeve, breathable panels.",
+    price: { kind: "add", cents: 2_800 },
+  },
+  {
+    id: "esports",
+    label: "Esports / Gaming",
+    description: "Relaxed fit, heavy sponsor placement, stand collar.",
+    price: { kind: "add", cents: 2_900 },
+  },
+  {
+    id: "training",
+    label: "Training / Warm-up",
+    description: "Lightweight everyday kit for squad training.",
+    price: { kind: "add", cents: 2_100 },
+  },
+];
+
+export const JERSEY_FABRICS: Option[] = [
+  {
+    id: "poly-interlock",
+    label: "Polyester Interlock",
+    description: "The workhorse. Smooth face, holds colour, hard-wearing.",
+    price: { kind: "multiplyBase", factor: 1.0 },
+    swatch: "#2a2825",
+  },
+  {
+    id: "poly-mesh",
+    label: "Micro-Mesh Polyester",
+    description: "Perforated for airflow. Best for hot-weather play.",
+    price: { kind: "multiplyBase", factor: 1.14 },
+    swatch: "#33302c",
+  },
+  {
+    id: "poly-spandex",
+    label: "Poly / Spandex Stretch",
+    description: "Four-way stretch, closer body fit.",
+    price: { kind: "multiplyBase", factor: 1.26 },
+    swatch: "#26241f",
+  },
+  {
+    id: "recycled-poly",
+    label: "Recycled Polyester",
+    description: "Made from post-consumer PET. Same hand, lower footprint.",
+    price: { kind: "multiplyBase", factor: 1.18 },
+    swatch: "#2d2b26",
+  },
+];
+
+export const JERSEY_FITS: Option[] = [
+  { id: "athletic", label: "Athletic", price: FREE },
+  { id: "regular", label: "Regular", price: FREE },
+  { id: "relaxed", label: "Relaxed", price: FREE },
+  { id: "womens", label: "Women's Cut", price: FREE },
+  { id: "youth", label: "Youth", price: { kind: "add", cents: -300 } },
+];
+
+export const JERSEY_SLEEVES: Option[] = [
+  { id: "short", label: "Short Sleeve", price: FREE },
+  { id: "sleeveless", label: "Sleeveless", price: FREE },
+  { id: "long", label: "Long Sleeve", price: { kind: "add", cents: 500 } },
+  { id: "raglan-contrast", label: "Contrast Raglan", price: { kind: "add", cents: 400 } },
+];
+
+export const JERSEY_COLLARS: Option[] = [
+  { id: "crew", label: "Crew Neck", price: FREE },
+  { id: "v-neck", label: "V-Neck", price: FREE },
+  { id: "polo", label: "Polo Collar", price: { kind: "add", cents: 900 } },
+  { id: "stand", label: "Stand Collar", price: { kind: "add", cents: 700 } },
+];
+
+/** Sublimation is priced by coverage, because that is how ink and time scale. */
+export const JERSEY_PRINT: Option[] = [
+  {
+    id: "front-only",
+    label: "Front Panel Only",
+    price: { kind: "add", cents: 600 },
+  },
+  {
+    id: "front-back",
+    label: "Front & Back",
+    price: { kind: "add", cents: 1_100 },
+  },
+  {
+    id: "all-over",
+    label: "All-Over, Edge to Edge",
+    description: "Full garment including sleeves and side panels.",
+    price: { kind: "add", cents: 1_900 },
+    leadTimeDays: 2,
+  },
+];
+
+export const JERSEY_NUMBERS: Option[] = [
+  { id: "none", label: "No Numbers", price: FREE },
+  { id: "back", label: "Back Number", price: { kind: "add", cents: 350 } },
+  {
+    id: "back-front",
+    label: "Back & Front Number",
+    price: { kind: "add", cents: 550 },
+  },
+  {
+    id: "back-front-shorts",
+    label: "Back, Front & Shorts",
+    price: { kind: "add", cents: 750 },
+  },
+];
+
+export const JERSEY_NAMES: Option[] = [
+  { id: "none", label: "No Names", price: FREE },
+  {
+    id: "player-names",
+    label: "Individual Player Names",
+    description: "Supply your roster; each shirt is printed to its player.",
+    price: { kind: "add", cents: 600 },
+    leadTimeDays: 2,
+  },
+];
+
+export const JERSEY_SIZES: Option[] = [
+  { id: "size-run", label: "Mixed Size Run", description: "Supply your size breakdown.", price: FREE },
+  { id: "youth-run", label: "Youth Size Run", price: FREE },
+  { id: "single-size", label: "Single Size", price: FREE },
+];
+
+/** Jacket option groups. Kept as OPTION_GROUPS for backwards compatibility. */
 export const OPTION_GROUPS: OptionGroup[] = [
   { id: "gender", label: "Cut", step: "silhouette", required: true, type: "single", options: GENDERS },
   { id: "style", label: "Style", step: "silhouette", required: true, type: "single", options: STYLES },
@@ -330,6 +477,59 @@ export const OPTION_GROUPS: OptionGroup[] = [
   { id: "measurements", label: "Measurements", step: "fit", required: false, type: "measure" },
 ];
 
+export const JERSEY_GROUPS: OptionGroup[] = [
+  { id: "style", label: "Sport", step: "silhouette", required: true, type: "single", options: JERSEY_STYLES },
+  { id: "fit", label: "Fit", step: "silhouette", required: true, type: "single", options: JERSEY_FITS },
+
+  { id: "fabric", label: "Fabric", step: "material", required: true, type: "single", options: JERSEY_FABRICS },
+
+  { id: "sleeves", label: "Sleeves", step: "construction", required: true, type: "single", options: JERSEY_SLEEVES },
+  { id: "collar", label: "Collar", step: "construction", required: true, type: "single", options: JERSEY_COLLARS },
+
+  { id: "print", label: "Sublimation coverage", step: "personalisation", required: true, type: "single", options: JERSEY_PRINT, helpText: "Priced by coverage — that is how ink and press time actually scale." },
+  { id: "numbers", label: "Numbers", step: "personalisation", required: false, type: "single", options: JERSEY_NUMBERS },
+  { id: "names", label: "Player names", step: "personalisation", required: false, type: "single", options: JERSEY_NAMES },
+  {
+    id: "teamName",
+    label: "Team or club name",
+    step: "personalisation",
+    required: false,
+    type: "text",
+    maxLength: 28,
+    pricePerCharacter: 40,
+    helpText: "Printed across the chest or back yoke.",
+  },
+
+  { id: "size", label: "Size run", step: "fit", required: true, type: "single", options: JERSEY_SIZES },
+];
+
+export type ProductType = "jacket" | "jersey";
+
+export const PRODUCT_TYPES: {
+  id: ProductType;
+  label: string;
+  blurb: string;
+  groups: OptionGroup[];
+}[] = [
+  {
+    id: "jacket",
+    label: "Leather Jacket",
+    blurb: "Cut, stitched and finished from full hides.",
+    groups: OPTION_GROUPS,
+  },
+  {
+    id: "jersey",
+    label: "Sublimated Jersey",
+    blurb: "Full-colour team kit, printed edge to edge.",
+    groups: JERSEY_GROUPS,
+  },
+];
+
+/** Single lookup used by the price engine, validation and the UI alike. */
+export function groupsFor(productType: ProductType): OptionGroup[] {
+  return productType === "jersey" ? JERSEY_GROUPS : OPTION_GROUPS;
+}
+
 export const STEPS = [
   { id: "silhouette", label: "Silhouette", n: "01" },
   { id: "material", label: "Material", n: "02" },
@@ -338,6 +538,14 @@ export const STEPS = [
   { id: "personalisation", label: "Personalisation", n: "05" },
   { id: "fit", label: "Fit & Size", n: "06" },
 ] as const;
+
+/** Steps that actually contain groups for the given product. */
+export function stepsFor(productType: ProductType) {
+  const groups = groupsFor(productType);
+  return STEPS.filter((s) => groups.some((g) => g.step === s.id)).map(
+    (s, i) => ({ ...s, n: String(i + 1).padStart(2, "0") }),
+  );
+}
 
 /**
  * Bulk tiers. Thresholds are inclusive lower bounds; the engine picks the

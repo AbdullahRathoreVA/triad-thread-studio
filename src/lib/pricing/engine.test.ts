@@ -183,6 +183,70 @@ describe("lead time", () => {
   });
 });
 
+describe("jersey line", () => {
+  const jersey = {
+    style: "football",
+    fit: "athletic",
+    fabric: "poly-interlock",
+    sleeves: "short",
+    collar: "crew",
+    print: "front-back",
+    numbers: "back",
+    names: "none",
+    size: "size-run",
+  };
+
+  test("prices from the jersey option set, not the jacket one", () => {
+    const r = calculatePrice({ productType: "jersey", selections: jersey, quantity: 1 });
+    // football 2400 + front-back print 1100 + back number 350 = 3850
+    assert.equal(r.unitCents, 3_850);
+    assert.deepEqual(r.warnings, []);
+  });
+
+  test("fabric multiplies the base only, mirroring leather on jackets", () => {
+    const r = calculatePrice({
+      productType: "jersey",
+      selections: { ...jersey, fabric: "poly-spandex" },
+      quantity: 1,
+    });
+    // 2400 x 1.26 = 3024, + 1100 + 350 = 4474
+    assert.equal(r.unitCents, 4_474);
+  });
+
+  test("all-over sublimation costs more and adds lead time", () => {
+    const base = calculatePrice({ productType: "jersey", selections: jersey, quantity: 1 });
+    const allOver = calculatePrice({
+      productType: "jersey",
+      selections: { ...jersey, print: "all-over" },
+      quantity: 1,
+    });
+    assert.ok(allOver.unitCents > base.unitCents);
+    assert.equal(allOver.leadTimeDays, base.leadTimeDays + 2);
+  });
+
+  test("a jacket option id is rejected on a jersey", () => {
+    const r = calculatePrice({
+      productType: "jersey",
+      selections: { ...jersey, style: "biker" },
+      quantity: 1,
+    });
+    // "biker" is not a jersey sport, so it falls back and warns.
+    assert.ok(r.warnings.some((w) => w.includes("No style selected")));
+  });
+
+  test("team runs hit the same bulk tiers", () => {
+    const r = calculatePrice({ productType: "jersey", selections: jersey, quantity: 150 });
+    assert.equal(r.bulkTier.discountBps, 2000);
+    assert.equal(r.bulkDiscountCents, Math.round(3_850 * 150 * 0.2));
+  });
+
+  test("missingRequired is scoped to the jersey groups", () => {
+    assert.equal(missingRequired(jersey, "jersey").length, 0);
+    // A complete jacket spec is NOT a complete jersey spec.
+    assert.ok(missingRequired(complete, "jersey").length > 0);
+  });
+});
+
 describe("integrity", () => {
   test("every money field is a whole number of cents", () => {
     const r = calculatePrice(

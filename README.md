@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Triad Thread Studio
 
-## Getting Started
+Production website and custom-order platform for a leather goods and sublimated
+apparel manufacturer.
 
-First, run the development server:
+Built on Next.js 16, TypeScript, Tailwind 4, React Three Fiber and Prisma 7.
+Every dependency is free-tier.
+
+---
+
+## Current state
+
+| Area | Status |
+|---|---|
+| Design system from measured brand palette | Complete |
+| Cinematic 3D hero, homepage | Complete |
+| Custom jacket configurator (26 option groups) | Complete |
+| Price engine + 19 passing tests | Complete |
+| Order API with server-side price re-validation | Complete |
+| Database schema (18 models) | Complete |
+| Admin auth, session, gate, overview | Complete |
+| Security headers, CSP, rate limiting | Complete |
+| SEO: metadata, JSON-LD, sitemap, robots | Complete |
+| Admin CRUD screens beyond Overview | **Not built** |
+| Product / collection / craft / contact pages | **Not built** |
+| Order checkout form (engine + API exist) | **Not built** |
+| Real product photography | **Not supplied** |
+
+`npm run verify` (typecheck + lint + test) and `npm run build` both pass.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what remains and in what order.
+
+---
+
+## Quick start
 
 ```bash
+npm install
+cp .env.example .env     # then fill it in — see docs/DEPLOYMENT.md
+npm run db:push
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without a database the public site still runs. `/admin` shows setup
+instructions rather than an error.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server on :3000 |
+| `npm run build` | Production build |
+| `npm run verify` | typecheck + lint + test |
+| `npm run test` | Price engine test suite |
+| `npm run db:push` | Apply schema to the database |
+| `npm run db:seed` | Seed admin user, collections, FAQs |
+| `npm run db:studio` | Prisma Studio |
+| `npm run check:placeholders` | **Launch gate** — fails while business details are unset |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Architecture
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── page.tsx                  Homepage
+│   ├── customize/                Configurator route
+│   ├── admin/
+│   │   ├── login/                Public — outside the protected group
+│   │   └── (protected)/          Route group; layout enforces the session
+│   ├── api/orders/               Order intake, authoritative pricing
+│   ├── api/admin/                Login / logout
+│   ├── sitemap.ts, robots.ts
+│   └── globals.css               Design tokens
+├── components/
+│   ├── layout/                   Nav, footer, cursor, preloader, smooth scroll
+│   ├── three/                    Hero scene, leather drape, motes
+│   ├── configurator/             Builder, 3D jacket, preview
+│   ├── ui/                       Button, reveal primitives
+│   └── seo/                      JSON-LD emitters
+├── config/
+│   ├── site.ts                   Business identity (placeholder-guarded)
+│   └── configurator.ts           Every option and price rule, as data
+├── lib/
+│   ├── pricing/engine.ts         Pure price engine + tests
+│   ├── session.ts                Edge-safe JWT primitives
+│   ├── auth.ts                   Node-only auth (bcrypt, Prisma)
+│   ├── three/leather-texture.ts  Procedural PBR leather generator
+│   ├── validation/order.ts       Zod schemas
+│   ├── rate-limit.ts, email.ts, db.ts
+├── hooks/use-environment.ts      SSR-safe capability hooks
+└── middleware.ts                 Security headers + admin gate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Decisions worth knowing
 
-## Deploy on Vercel
+**Pricing is computed twice, deliberately.** The browser runs the engine for
+instant feedback; `POST /api/orders` runs the identical pure function and
+rejects any mismatch with a 409. The client's number is never persisted.
+All money is integer cents — no floats anywhere in the pricing path.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Leather is generated, not photographed.** `lib/three/leather-texture.ts`
+synthesises albedo, normal and roughness maps from Worley noise on a canvas.
+Zero licensing risk, ~40KB of code instead of megabytes of PBR textures, and a
+distinct material for every leather option at no asset cost.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Auth is split across two modules.** `lib/session.ts` holds jose-only
+primitives and is the only thing middleware may import; `lib/auth.ts` adds
+bcrypt and Prisma. Importing the latter from middleware crashes the Edge
+runtime — the comment in both files explains why.
+
+**Middleware is not the security boundary.** It checks the JWT signature only,
+because Prisma cannot run on the Edge. The authoritative check — account
+active, `tokenVersion` current — lives in `app/admin/(protected)/layout.tsx`.
+
+**Unknown business facts are `PLACEHOLDER`, never invented.** A manufacturer's
+address, phone number and lead times are trust signals; publishing guessed ones
+is worse than publishing none. `npm run check:placeholders` fails while any
+remain.
+
+---
+
+## Assets
+
+`public/brand/logo-primary.jpg` is the supplied brand logo. The entire palette
+in `globals.css` was derived by pixel-sampling it (`#0A0A0A` at 67% of the
+image, `#131313` at 20%, leather `#45271A`–`#664837`, gold `#765839`–`#B79976`).
+
+**No product photography is included.** The images originally supplied were not
+photographs of this company's products — one carried a stock-library watermark,
+others were retailer product shots of other brands, and all were ≤1280px. They
+are not used anywhere. See [docs/ASSETS.md](docs/ASSETS.md).
+
+---
+
+## Documentation
+
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Supabase, Vercel, Resend, Cloudinary setup
+- [docs/SECURITY.md](docs/SECURITY.md) — threat model and controls
+- [docs/ASSETS.md](docs/ASSETS.md) — photography requirements
+- [docs/ROADMAP.md](docs/ROADMAP.md) — what remains

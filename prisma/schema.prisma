@@ -1,0 +1,405 @@
+// Triad Thread Studio — data model
+//
+// Postgres via Supabase (free tier). `directUrl` is required because Supabase's
+// pooled connection cannot run migrations.
+//
+// Money is stored as Int (minor units / cents) everywhere. Never Float, never
+// Decimal-as-Float — a rounding drift in a bulk quote is a real invoice dispute.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: connection URLs live in prisma.config.ts (for the CLI) and in the
+// driver adapter (for the app). They are deliberately no longer in the schema.
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// CATALOGUE
+// ============================================================================
+
+model Collection {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  subtitle    String?
+  description String?   @db.Text
+  heroImage   String?
+  position    Int       @default(0)
+  published   Boolean   @default(false)
+  seoTitle    String?
+  seoDesc     String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([published, position])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  sku         String   @unique
+  title       String
+  subtitle    String?
+  story       String?  @db.Text
+  description String   @db.Text
+
+  basePriceCents Int
+  currency       String @default("USD")
+
+  category ProductCategory
+  gender   Gender          @default(UNISEX)
+
+  /// Spec sheet rendered as a definition list: [{ label, value }]
+  specs Json @default("[]")
+  /// Selling points, plain strings.
+  features String[] @default([])
+
+  images   ProductImage[]
+  variants ProductVariant[]
+  videoUrl String?
+
+  /// Drives the 3D preview when no photography exists.
+  leatherSwatch String @default("#45271a")
+  leatherGrain  Int    @default(26)
+
+  published  Boolean     @default(false)
+  featured   Boolean     @default(false)
+  position   Int         @default(0)
+  seoTitle   String?
+  seoDesc    String?
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+
+  collectionId String?
+  orderItems   OrderItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([published, featured, position])
+  @@index([collectionId])
+  @@index([category])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  /// Never optional in the admin UI — an empty alt on a product image is an
+  /// accessibility failure and a lost image-search ranking.
+  alt       String
+  width     Int?
+  height    Int?
+  position  Int     @default(0)
+  is360     Boolean @default(false)
+
+  @@index([productId, position])
+}
+
+model ProductVariant {
+  id            String  @id @default(cuid())
+  productId     String
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String  @unique
+  size          String
+  colour        String
+  priceDeltaCents Int   @default(0)
+  stock         Int     @default(0)
+  /// Lets a variant be listed but unbuyable without deleting history.
+  active        Boolean @default(true)
+
+  @@unique([productId, size, colour])
+  @@index([productId])
+}
+
+enum ProductCategory {
+  LEATHER_JACKET
+  LEATHER_GOODS
+  SUBLIMATED_JERSEY
+  ACCESSORY
+  OTHER
+}
+
+enum Gender {
+  MENS
+  WOMENS
+  UNISEX
+}
+
+// ============================================================================
+// CUSTOM DESIGNS & ORDERS
+// ============================================================================
+
+model CustomDesign {
+  id         String  @id @default(cuid())
+  /// Short shareable code, e.g. "TTS-DSGN-7K2M".
+  publicCode String  @unique
+
+  /// Full selection map from the configurator, keyed by option-group id.
+  selections   Json
+  texts        Json  @default("{}")
+  measurements Json  @default("{}")
+
+  referenceImageUrl   String?
+  specialInstructions String? @db.Text
+
+  quantity Int @default(1)
+
+  /// Snapshot of the engine's output at save time. Kept for audit: if pricing
+  /// config later changes, we can still show what the customer was quoted.
+  quotedUnitCents  Int
+  quotedTotalCents Int
+  quotedBreakdown  Json
+  quotedAt         DateTime @default(now())
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  orderItems OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([customerId])
+}
+
+model Customer {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  name      String?
+  phone     String?
+  company   String?
+  /// Set once the customer places a B2B enquiry — unlocks tier pricing in admin.
+  isWholesale Boolean @default(false)
+
+  designs   CustomDesign[]
+  orders    Order[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model Order {
+  id          String @id @default(cuid())
+  /// Human-facing, quoted in emails: "TTS-2026-0001".
+  orderNumber String @unique
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  status OrderStatus @default(PENDING)
+
+  items OrderItem[]
+
+  /// Authoritative server-computed totals. Never trusted from the client.
+  subtotalCents       Int
+  bulkDiscountCents   Int @default(0)
+  couponDiscountCents Int @default(0)
+  shippingCents       Int @default(0)
+  taxCents            Int @default(0)
+  totalCents          Int
+  currency            String @default("USD")
+
+  couponCode String?
+
+  shippingName    String
+  shippingLine1   String
+  shippingLine2   String?
+  shippingCity    String
+  shippingRegion  String?
+  shippingPostal  String
+  shippingCountry String
+
+  notes            String?   @db.Text
+  estimatedShipAt  DateTime?
+  leadTimeDays     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// Exactly one of these is set: a catalogue product or a custom design.
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  customDesignId String?
+  customDesign   CustomDesign? @relation(fields: [customDesignId], references: [id], onDelete: SetNull)
+
+  /// Denormalised so the order stays readable after a product is renamed
+  /// or deleted. An invoice must never change retroactively.
+  titleSnapshot String
+  specSnapshot  Json
+
+  quantity   Int
+  unitCents  Int
+  totalCents Int
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  IN_PRODUCTION
+  QUALITY_CHECK
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================================================
+// COMMERCE SUPPORT
+// ============================================================================
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  description   String?
+  percentOffBps Int?
+  amountOffCents Int?
+  minSubtotalCents Int?
+  maxRedemptions Int?
+  timesRedeemed Int       @default(0)
+  startsAt      DateTime?
+  expiresAt     DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@index([active, code])
+}
+
+// ============================================================================
+// CMS
+// ============================================================================
+
+model ContentBlock {
+  /// Addressed by key from the page that renders it, e.g. "home.hero.headline".
+  key       String   @id
+  label     String
+  /// Arbitrary shape; each consumer validates with its own Zod schema.
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  body        String    @db.Text
+  coverImage  String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  seoTitle    String?
+  seoDesc     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  author    String
+  role      String?
+  company   String?
+  quote     String   @db.Text
+  rating    Int?
+  published Boolean  @default(false)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([published, position])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String   @db.Text
+  category  String?
+  position  Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([published, position])
+}
+
+model Enquiry {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  subject   String?
+  message   String        @db.Text
+  quantity  Int?
+  type      EnquiryType   @default(GENERAL)
+  status    EnquiryStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+enum EnquiryType {
+  GENERAL
+  WHOLESALE
+  CUSTOM
+  SUPPORT
+}
+
+enum EnquiryStatus {
+  NEW
+  READ
+  REPLIED
+  CLOSED
+}
+
+// ============================================================================
+// ADMIN AUTH
+// ============================================================================
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  /// bcrypt hash. A plaintext password must never reach this table.
+  passwordHash String
+  name         String?
+  role         AdminRole @default(EDITOR)
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  /// Incremented on password change to invalidate every issued JWT at once.
+  tokenVersion Int       @default(0)
+  createdAt    DateTime  @default(now())
+}
+
+enum AdminRole {
+  OWNER
+  ADMIN
+  EDITOR
+}
+
+/// Append-only trail of privileged mutations.
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

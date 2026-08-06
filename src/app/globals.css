@@ -1,26 +1,276 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================================
+   TRIAD THREAD STUDIO — DESIGN SYSTEM
+   Palette derived by pixel-sampling the brand logo (public/brand/logo-primary.jpg).
+   Dominant values measured: #0A0A0A (67% of logo), #131313 (20%),
+   leather #45271A–#664837, bronze/gold #765839–#B79976.
+   Neutrals are warm-tinted on purpose: pure greys read cold and cheap next to
+   leather. Every neutral carries a few points of red/yellow.
+   ========================================================================= */
+
+@theme {
+  /* --- Neutrals: warm-tinted "ink" scale ------------------------------- */
+  --color-ink-950: #060605;
+  --color-ink-900: #0a0a0a; /* page base — measured logo background */
+  --color-ink-850: #0f0f0e;
+  --color-ink-800: #131313; /* elevated surface — measured */
+  --color-ink-700: #1c1b19;
+  --color-ink-600: #2a2825;
+  --color-ink-500: #3d3a36;
+  --color-ink-400: #5c5751;
+  --color-ink-300: #8a8378;
+  --color-ink-200: #b5aca0;
+  --color-ink-100: #dcd5ca;
+  --color-ink-50: #f2eee7;
+
+  /* --- Leather: the hide browns from the logo's "T" --------------------- */
+  --color-leather-900: #150905;
+  --color-leather-800: #261308;
+  --color-leather-700: #351809;
+  --color-leather-600: #45271a;
+  --color-leather-500: #553729;
+  --color-leather-400: #664837;
+  --color-leather-300: #8a6b55;
+
+  /* --- Gold / bronze: the logo's arc, needle eye and wordmark ----------- */
+  --color-gold-700: #765839;
+  --color-gold-600: #876848;
+  --color-gold-500: #977957;
+  --color-gold-400: #a68966;
+  --color-gold-300: #b79976; /* primary accent */
+  --color-gold-200: #cdb595;
+  --color-gold-100: #e0cdb2;
+
+  /* --- Silver: the needle and the "THREAD" half of the wordmark --------- */
+  --color-silver-400: #8e9095;
+  --color-silver-300: #b8babe;
+  --color-silver-200: #d8dadd;
+  --color-silver-100: #eeeff1;
+
+  /* --- Semantic ---------------------------------------------------------- */
+  --color-canvas: #0a0a0a;
+  --color-surface: #131313;
+  --color-hairline: rgb(183 153 118 / 0.14);
+  --color-hairline-strong: rgb(183 153 118 / 0.28);
+
+  /* --- Type ------------------------------------------------------------- */
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-roman: var(--font-cinzel), "Cinzel", Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Fluid scale. Luxury layouts want big jumps, not a timid 1.2 ratio. */
+  --text-eyebrow: 0.6875rem;
+  --text-xl: clamp(1.25rem, 0.9vw + 1rem, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.4vw + 1.1rem, 2rem);
+  --text-3xl: clamp(1.875rem, 2.2vw + 1.2rem, 2.75rem);
+  --text-4xl: clamp(2.25rem, 3.4vw + 1.3rem, 3.75rem);
+  --text-5xl: clamp(2.75rem, 5vw + 1.4rem, 5rem);
+  --text-6xl: clamp(3.25rem, 7vw + 1.5rem, 7rem);
+  --text-hero: clamp(3.5rem, 10.5vw, 11rem);
+
+  /* --- Motion ----------------------------------------------------------- */
+  /* Luxury motion is slow-out, never bouncy. These are the only easings used. */
+  --ease-luxe: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-luxe-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-silk: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* --- Depth ------------------------------------------------------------ */
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.7);
+  --shadow-deep: 0 2px 4px rgb(0 0 0 / 0.6), 0 32px 80px -16px rgb(0 0 0 / 0.85);
+  --shadow-glow: 0 0 0 1px rgb(183 153 118 / 0.2), 0 0 40px -8px rgb(183 153 118 / 0.25);
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ============================================================================
+   BASE
+   ========================================================================= */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    /* Lenis drives scrolling; native smooth-scroll would fight it. */
+    scroll-behavior: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink-200);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    color: var(--color-ink-50);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+
+  ::selection {
+    background: var(--color-gold-300);
+    color: var(--color-ink-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-300);
+    outline-offset: 3px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Hide the native cursor only where the custom one is active and the
+     pointer is genuinely a mouse. Touch and stylus keep normal behaviour. */
+  @media (hover: hover) and (pointer: fine) {
+    body[data-custom-cursor="on"],
+    body[data-custom-cursor="on"] * {
+      cursor: none;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================================================
+   UTILITIES
+   ========================================================================= */
+
+@layer utilities {
+  /* Eyebrow labels — Roman caps, matching the logo's engraved wordmark. */
+  .eyebrow {
+    font-family: var(--font-roman);
+    font-size: var(--text-eyebrow);
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--color-gold-300);
+    line-height: 1;
+  }
+
+  /* The logo's metallic wordmark, reproduced in CSS for headings. */
+  .text-gilt {
+    background: linear-gradient(
+      100deg,
+      var(--color-gold-600) 0%,
+      var(--color-gold-100) 26%,
+      var(--color-gold-300) 44%,
+      var(--color-gold-100) 62%,
+      var(--color-gold-600) 100%
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-silvered {
+    background: linear-gradient(
+      100deg,
+      var(--color-silver-400) 0%,
+      var(--color-silver-100) 30%,
+      var(--color-silver-300) 50%,
+      var(--color-silver-100) 70%,
+      var(--color-silver-400) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Hairline rule that fades at both ends — used under section headers. */
+  .rule-fade {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-hairline-strong) 18%,
+      var(--color-hairline-strong) 82%,
+      transparent
+    );
+  }
+
+  .glass {
+    background: rgb(19 19 19 / 0.62);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--color-hairline);
+  }
+
+  /* Film grain. Pure CSS — no image request, no layout cost. */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .container-luxe {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 4.5rem);
+    max-width: 90rem;
+  }
+
+  /* Ultra-wide guard: past 1920px, stop the measure from becoming unreadable. */
+  @media (min-width: 1920px) {
+    .container-luxe { max-width: 100rem; }
+  }
+}
+
+/* ============================================================================
+   KEYFRAMES
+   ========================================================================= */
+
+@keyframes gilt-sweep {
+  0%   { background-position: 220% 50%; }
+  100% { background-position: -20% 50%; }
+}
+
+@keyframes float-mote {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10%, 90% { opacity: 1; }
+  50%      { transform: translate3d(var(--drift-x, 12px), -60px, 0); }
+}
+
+.animate-gilt-sweep { animation: gilt-sweep 7s var(--ease-silk) infinite; }
+
+/* ============================================================================
+   REDUCED MOTION
+   Not an afterthought: this site is motion-heavy and vestibular disorders are
+   real. Everything decorative stops; nothing becomes unusable.
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-gilt-sweep { animation: none; }
+
+  body[data-custom-cursor="on"],
+  body[data-custom-cursor="on"] * {
+    cursor: auto;
+  }
 }

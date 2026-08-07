@@ -4,6 +4,7 @@ import { site } from "@/config/site";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { Cursor } from "@/components/layout/cursor";
 import { Preloader } from "@/components/layout/preloader";
+import { Analytics } from "@/components/layout/analytics";
 import { OrganizationJsonLd } from "@/components/seo/json-ld";
 import "./globals.css";
 
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
 
+        <Analytics />
         <Preloader />
         <Cursor />
         <SmoothScroll>{children}</SmoothScroll>

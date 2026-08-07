@@ -403,3 +403,32 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([createdAt])
 }
+
+// ============================================================================
+// ANALYTICS
+// ============================================================================
+
+/// A single page view.
+///
+/// First-party and cookie-free. No third-party script, nothing sold on, and
+/// no consent banner needed because nothing personally identifying is stored:
+/// `visitorHash` is a one-way hash of IP + user-agent + a salt that rotates
+/// daily, so a returning visitor can be counted once per day but never
+/// re-identified across days or traced back to an IP address.
+model PageView {
+  id          String   @id @default(cuid())
+  path        String
+  referrerHost String?
+  /// "mobile" | "tablet" | "desktop" | "bot"
+  device      String
+  browser     String?
+  os          String?
+  country     String?
+  /// Daily-rotating one-way hash. Not reversible to an IP.
+  visitorHash String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path, createdAt])
+  @@index([visitorHash, createdAt])
+}

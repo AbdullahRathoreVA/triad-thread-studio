@@ -23,11 +23,13 @@ import { getCurrentAdmin } from "@/lib/auth";
  */
 const NAV = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/insights", label: "Insights" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/enquiries", label: "Enquiries" },
+  { href: "/admin/products", label: "Products" },
 ];
 
-const PLANNED = ["Products", "Collections", "Coupons", "Content", "FAQs"];
+const PLANNED = ["Collections", "Coupons", "Content", "FAQs"];
 
 export default async function AdminLayout({
   children,

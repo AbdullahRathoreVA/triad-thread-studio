@@ -15,7 +15,10 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "tsx prisma/seed.ts",
   },
+  // Guarded: `prisma generate` runs during the Vercel build, where DIRECT_URL
+  // may legitimately be absent. Generate needs no connection — only migrate
+  // and studio do — so an unset value must not fail the build.
   datasource: {
-    url: env("DIRECT_URL"),
+    url: process.env.DIRECT_URL ? env("DIRECT_URL") : "postgresql://unset",
   },
 });

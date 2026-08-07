@@ -79,7 +79,7 @@ export const site: {
   /** Tagline lifted verbatim from the supplied logo artwork. */
   tagline: "Leather Products · Sublimated Products",
   description:
-    "Wholesale manufacturer of premium leather jackets, custom leather goods and sublimated jerseys. Trade pricing from 12 units, manufacturing under your own label.",
+    "Wholesale manufacturer of premium leather jackets, custom leather goods and sublimated jerseys. Quoted per run, manufacturing under your own label.",
 
   /** Set NEXT_PUBLIC_SITE_URL in production; localhost is a dev fallback only. */
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
@@ -153,7 +153,7 @@ export const primaryNav: NavLink[] = [
   {
     label: "Custom Studio",
     href: "/customize",
-    description: "Design your jacket panel by panel. Priced live.",
+    description: "Specify your jacket panel by panel and request a quote.",
   },
   {
     label: "Bulk & Wholesale",
@@ -170,7 +170,7 @@ export const primaryNav: NavLink[] = [
 
 /** Capability strip shown under the hero — derived from the logo's own icon row. */
 export const capabilities = [
-  { label: "Trade Pricing", detail: "Tiered from 12 units, up to 32% off" },
+  { label: "Trade Pricing", detail: "Quoted per run, tiered from 12 units" },
   { label: "Private Label", detail: "Your pattern, spec, labels and hardware" },
   { label: "Full-Grain Leather", detail: "Jackets, bags, belts and wallets" },
   { label: "Sublimated Jerseys", detail: "Full-colour, edge-to-edge, any run size" },

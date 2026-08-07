@@ -76,8 +76,8 @@ export function Hero() {
         >
           <p className="max-w-md text-[0.95rem] leading-relaxed text-ink-300">
             Leather jackets, leather goods and sublimated jerseys, manufactured
-            to your specification and supplied at trade prices. Tiered
-            discounts from 12 units, produced under your own label.
+            to your specification and supplied at trade prices — quoted per run
+            and produced under your own label.
           </p>
 
           <div className="flex flex-wrap gap-3">

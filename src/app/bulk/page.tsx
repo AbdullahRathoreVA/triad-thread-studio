@@ -10,12 +10,12 @@ import { site } from "@/config/site";
 export const metadata: Metadata = {
   title: "Bulk & Wholesale",
   description:
-    "Wholesale leather jackets and sublimated jerseys for retailers, clothing brands, corporate clients and sports teams. Tiered pricing from 12 units, manufacturing to your own pattern and label.",
+    "Wholesale leather jackets and sublimated jerseys for retailers, clothing brands, corporate clients and sports teams. Quoted per run, manufacturing to your own pattern and label.",
   alternates: { canonical: "/bulk" },
   openGraph: {
     title: "Bulk & Wholesale Manufacturing — Triad Thread Studio",
     description:
-      "Tiered pricing from 12 units. We manufacture under your label, to your pattern and spec.",
+      "Every run quoted individually. We manufacture under your label, to your pattern and spec.",
     url: "/bulk",
   },
 };

@@ -31,12 +31,18 @@ export type JerseyAppearance = {
 
 const RADIAL = 44;
 
-/** Jersey torso: broad shoulders, minimal waist suppression, released hem. */
+/**
+ * Jersey torso, hem (t=0) to shoulder line (t=1).
+ *
+ * A jersey is only slightly tapered — the shape that makes it read as a
+ * garment is the SHOULDER YOKE above this, not the body. An earlier version
+ * lofted a plain tube and stuck sleeves on the side of it, which rendered as
+ * a bucket with flaps.
+ */
 function bodyProfile(t: number) {
-  // t: 0 = hem, 1 = shoulder
-  if (t > 0.88) return { rx: mix(1.06, 0.94, (t - 0.88) / 0.12), rz: 0.5 };
-  if (t > 0.55) return { rx: mix(1.0, 1.06, (t - 0.55) / 0.33), rz: 0.48 };
-  return { rx: mix(1.04, 1.0, t / 0.55), rz: 0.47 };
+  if (t > 0.9) return { rx: mix(0.98, 0.9, (t - 0.9) / 0.1), rz: 0.4 };
+  if (t > 0.5) return { rx: mix(0.95, 0.98, (t - 0.5) / 0.4), rz: 0.4 };
+  return { rx: mix(0.97, 0.95, t / 0.5), rz: 0.41 };
 }
 
 export function JerseyModel({
@@ -85,51 +91,74 @@ export function JerseyModel({
   );
 
   const { body, sleeveL, sleeveR, collarRing } = useMemo(() => {
-    const L = 2.5;
+    const L = 2.3;
     const halfL = L / 2;
 
     const rings: THREE.Vector3[][] = [];
-    const STEPS = 22;
+
+    // --- Body: hem up to the shoulder line ------------------------------
+    const STEPS = 18;
     for (let i = 0; i <= STEPS; i++) {
       const t = i / STEPS;
       const { rx, rz } = bodyProfile(t);
       rings.push(
-        section({ radial: RADIAL, rx, rz, y: -halfL + t * L, power: mix(2.3, 2.7, t) }),
+        section({ radial: RADIAL, rx, rz, y: -halfL + t * L, power: 2.5 }),
       );
     }
+
+    // --- Shoulder yoke: closes the top and makes the T ------------------
+    // Without this the torso is an open tube and the whole thing reads as a
+    // container rather than a shirt.
+    const YOKE = 7;
+    for (let i = 1; i <= YOKE; i++) {
+      const t = i / YOKE;
+      rings.push(
+        section({
+          radial: RADIAL,
+          // Sweeps in hard toward the neck opening.
+          rx: mix(0.9, 0.29, t * t),
+          rz: mix(0.4, 0.2, t * t),
+          y: halfL + t * 0.3,
+          power: 2.4,
+        }),
+      );
+    }
+
     const bodyGeo = loft(rings, { capStart: true });
 
+    // --- Sleeves --------------------------------------------------------
     const sleeveLength =
-      appearance.sleeve === "long" ? 1.5 : appearance.sleeve === "sleeveless" ? 0.16 : 0.62;
+      appearance.sleeve === "long" ? 1.25 : appearance.sleeve === "sleeveless" ? 0.1 : 0.5;
 
     const buildSleeve = (side: 1 | -1) => {
       const segs = 10;
       const out: THREE.Vector3[][] = [];
       for (let i = 0; i <= segs; i++) {
         const t = i / segs;
-        // Set-in sleeves stand out from the shoulder before dropping.
-        const x = side * (0.96 + t * (appearance.sleeve === "long" ? 0.5 : 0.32));
-        const y = halfL - 0.2 - t * sleeveLength;
-        const r = mix(0.34, appearance.sleeve === "long" ? 0.19 : 0.29, t);
+        // Set into the shoulder and angled DOWN and out, the way a sleeve
+        // actually hangs — not straight out sideways.
+        const x = side * (0.78 + t * (0.42 + sleeveLength * 0.22));
+        const y = halfL - 0.06 - t * sleeveLength;
+        const r = mix(0.33, appearance.sleeve === "long" ? 0.17 : 0.27, t);
         out.push(
-          section({ radial: RADIAL, rx: r, rz: r * 0.95, y, centreX: x, power: 2.1 }),
+          section({ radial: RADIAL, rx: r, rz: r * 0.9, y, centreX: x, power: 2.1 }),
         );
       }
-      return loft(out, { capEnd: appearance.sleeve === "sleeveless" });
+      return loft(out, { capEnd: true });
     };
 
-    // Neck rib — a shallow band, flared for polo/stand collars.
-    const collarHeight = appearance.collar === "polo" || appearance.collar === "stand" ? 0.2 : 0.07;
+    // --- Neck rib -------------------------------------------------------
+    const flared = appearance.collar === "polo" || appearance.collar === "stand";
     const collarRings: THREE.Vector3[][] = [];
     for (let i = 0; i <= 4; i++) {
       const t = i / 4;
       collarRings.push(
         section({
           radial: RADIAL,
-          rx: mix(0.42, appearance.collar === "polo" ? 0.5 : 0.44, t),
-          rz: mix(0.3, appearance.collar === "polo" ? 0.36 : 0.31, t),
-          y: halfL + t * collarHeight,
-          power: 2.5,
+          rx: mix(0.3, flared ? 0.36 : 0.31, t),
+          rz: mix(0.21, flared ? 0.26 : 0.22, t),
+          y: halfL + 0.3 + t * (flared ? 0.16 : 0.05),
+          power: 2.4,
         }),
       );
     }
@@ -149,42 +178,16 @@ export function JerseyModel({
   });
 
   return (
-    <group ref={group} scale={0.82}>
+    <group ref={group} scale={0.95}>
       <mesh geometry={body} material={fabric} castShadow receiveShadow />
       <mesh geometry={sleeveL} material={fabric} castShadow />
       <mesh geometry={sleeveR} material={fabric} castShadow />
       {/* Contrast neck rib — the clearest read of the secondary colour. */}
       <mesh geometry={collarRing} material={accent} />
 
-      {/* Contrast sleeve cuffs */}
-      {appearance.sleeve !== "sleeveless" &&
-        [-1, 1].map((side) => (
-          <mesh
-            key={side}
-            material={accent}
-            position={[
-              side * (0.96 + (appearance.sleeve === "long" ? 0.5 : 0.32)),
-              1.25 - 0.2 - (appearance.sleeve === "long" ? 1.5 : 0.62),
-              0,
-            ]}
-            rotation={[0, 0, 0]}
-          >
-            <cylinderGeometry
-              args={[
-                appearance.sleeve === "long" ? 0.2 : 0.3,
-                appearance.sleeve === "long" ? 0.195 : 0.295,
-                0.09,
-                RADIAL,
-                1,
-                true,
-              ]}
-            />
-          </mesh>
-        ))}
-
-      {/* Hem band */}
-      <mesh material={accent} position={[0, -1.25 - 0.03, 0]}>
-        <cylinderGeometry args={[1.045, 1.045, 0.07, RADIAL, 1, true]} />
+      {/* Hem band, sitting flush at the bottom edge of the body. */}
+      <mesh material={accent} position={[0, -1.15 + 0.035, 0]}>
+        <cylinderGeometry args={[0.972, 0.972, 0.07, RADIAL, 1, true]} />
       </mesh>
     </group>
   );

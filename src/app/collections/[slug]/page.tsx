@@ -12,7 +12,6 @@ import {
   ProductRenderRoot,
 } from "@/components/product/product-render";
 import { db } from "@/lib/db";
-import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 300;
 
@@ -193,8 +192,8 @@ export default async function CollectionPage({ params }: Params) {
                           {product.subtitle}
                         </p>
                       )}
-                      <p className="mt-2.5 text-[0.85rem] tabular-nums text-gold-200">
-                        {formatPrice(product.basePriceCents, product.currency)}
+                      <p className="mt-2.5 font-roman text-[0.6rem] uppercase tracking-[0.2em] text-gold-300">
+                        Request pricing
                       </p>
                     </Link>
                   </Reveal>

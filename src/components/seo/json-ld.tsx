@@ -1,4 +1,4 @@
-import { site, PLACEHOLDER } from "@/config/site";
+import { site, PLACEHOLDER, SHOW_PUBLIC_PRICING } from "@/config/site";
 
 /**
  * Structured data helpers.
@@ -103,10 +103,13 @@ export function ProductJsonLd({
         image: image.startsWith("http") ? image : `${site.url}${image}`,
         sku,
         brand: { "@type": "Brand", name: site.name },
+        // With public pricing off, emitting a price here would put a number
+        // into Google's rich result that the owners never agreed to quote.
         offers: {
           "@type": "Offer",
-          price: (priceCents / 100).toFixed(2),
-          priceCurrency: currency,
+          ...(SHOW_PUBLIC_PRICING
+            ? { price: (priceCents / 100).toFixed(2), priceCurrency: currency }
+            : { priceSpecification: { "@type": "PriceSpecification", valueAddedTaxIncluded: false } }),
           availability: inStock
             ? "https://schema.org/InStock"
             : "https://schema.org/PreOrder",

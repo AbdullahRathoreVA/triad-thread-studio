@@ -3,7 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { Check, RotateCcw, ChevronDown } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import {
   STEPS,
   BULK_TIERS,
@@ -30,7 +30,7 @@ import {
   missingRequired,
   type Selections,
 } from "@/lib/pricing/engine";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkout } from "./checkout";
 import type { JacketAppearance } from "./jacket-model";
@@ -97,7 +97,6 @@ export function Configurator() {
   const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("silhouette");
   const [autoRotate, setAutoRotate] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const select = useCallback((groupId: string, optionId: string) => {
     setSelections((prev) => ({ ...prev, [groupId]: optionId }));
@@ -172,14 +171,13 @@ export function Configurator() {
     };
   }, [selections]);
 
-  /** The next unreached tier, if the buyer is close enough for it to matter. */
-  const nextTier = useMemo(() => {
-    const candidate = BULK_TIERS.find((t) => t.minQty > quantity);
-    if (!candidate) return null;
-    // Only nudge within a sensible reach — "add 850 more" is noise.
-    const gap = candidate.minQty - quantity;
-    return gap <= Math.max(10, candidate.minQty * 0.25) ? candidate : null;
-  }, [quantity]);
+  /** How much of the spec the buyer has actually filled in. */
+  const chosenCount = useMemo(
+    () =>
+      Object.values(selections).filter(Boolean).length +
+      Object.values(texts).filter((t) => t?.trim()).length,
+    [selections, texts],
+  );
 
   const activeGroups = groupsFor(productType);
   const activeSteps = useMemo(() => stepsFor(productType), [productType]);
@@ -421,108 +419,32 @@ export function Configurator() {
             same breakdown is shown in full on the checkout review screen, so
             keeping a second permanent copy here bought nothing.            */}
         <div className="shrink-0 border-t border-hairline bg-ink-850">
-          <button
-            type="button"
-            onClick={() => setBreakdownOpen((v) => !v)}
-            aria-expanded={breakdownOpen}
-            className="flex w-full items-center justify-between px-6 py-2.5 text-[0.7rem] text-ink-500 transition-colors hover:text-ink-200"
-          >
-            <span>
-              {breakdown.lineItems.length} line
-              {breakdown.lineItems.length === 1 ? "" : "s"} · view breakdown
-            </span>
-            <ChevronDown
-              size={14}
-              className={cn(
-                "transition-transform duration-300",
-                breakdownOpen && "rotate-180",
-              )}
-            />
-          </button>
-
-          {breakdownOpen && (
-            <div className="max-h-44 space-y-1.5 overflow-y-auto border-t border-hairline px-6 py-3">
-              {breakdown.lineItems.map((item) => (
-                <div
-                  key={item.id + item.label}
-                  className="flex items-baseline justify-between gap-4 text-[0.72rem]"
-                >
-                  <span className="text-ink-400">
-                    {item.label}
-                    {item.detail && (
-                      <span className="text-ink-600"> · {item.detail}</span>
-                    )}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-ink-300">
-                    {formatPrice(item.cents)}
-                  </span>
-                </div>
-              ))}
-
-              {breakdown.bulkDiscountCents > 0 && (
-                <Row
-                  label={breakdown.bulkTier.label}
-                  value={`− ${formatPrice(breakdown.bulkDiscountCents)}`}
-                  accent
-                />
-              )}
-              {breakdown.couponDiscountCents > 0 && (
-                <Row
-                  label={`Coupon · ${breakdown.couponCode}`}
-                  value={`− ${formatPrice(breakdown.couponDiscountCents)}`}
-                  accent
-                />
-              )}
-              <Row
-                label="Shipping"
-                value={
-                  breakdown.shippingCents === 0
-                    ? "Included"
-                    : formatPrice(breakdown.shippingCents)
-                }
-              />
-            </div>
-          )}
-
-          <div className="space-y-2 border-t border-hairline px-6 pb-4 pt-3">
-            {/* Per-unit is the number a trade buyer compares on; the total is
-                what they budget. Both matter, so show both. */}
+          <div className="space-y-2 px-6 pb-4 pt-4">
             <div className="flex items-end justify-between">
               <div>
-                <p className="eyebrow">
-                  {breakdown.quantity > 1 ? "Total" : "Price"}
-                </p>
-                <p className="mt-1 text-[0.68rem] tabular-nums text-gold-400">
-                  {formatPrice(
-                    Math.round(
-                      (breakdown.subtotalCents - breakdown.bulkDiscountCents) /
-                        breakdown.quantity,
-                    ),
-                  )}{" "}
-                  per unit
+                <p className="eyebrow">Your specification</p>
+                <p className="mt-1.5 text-[0.72rem] leading-snug text-ink-400">
+                  {chosenCount} option{chosenCount === 1 ? "" : "s"} set
                 </p>
                 <p className="mt-0.5 text-[0.68rem] text-ink-500">
-                  Est. {breakdown.leadTimeDays} working days
+                  Est. {breakdown.leadTimeDays} working days production
                 </p>
               </div>
-              <motion.p
-                key={breakdown.totalCents}
-                initial={{ opacity: 0.5, y: -3 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="font-display text-3xl tabular-nums text-gilt"
-              >
-                {formatPrice(breakdown.totalCents)}
-              </motion.p>
+              <div className="text-right">
+                <p className="font-display text-3xl tabular-nums text-gilt">
+                  {quantity.toLocaleString()}
+                </p>
+                <p className="text-[0.66rem] text-ink-500">units</p>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-1">
-              <div className="flex items-center rounded-xs border border-hairline">
+              <div className="flex flex-1 items-center rounded-xs border border-hairline">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   aria-label="Decrease quantity"
-                  className="px-3.5 py-2.5 text-ink-300 transition-colors hover:text-gold-200"
+                  className="px-4 py-2.5 text-ink-300 transition-colors hover:text-gold-200"
                 >
                   −
                 </button>
@@ -535,26 +457,17 @@ export function Configurator() {
                     setQuantity(Math.max(1, Math.floor(Number(e.target.value) || 1)))
                   }
                   aria-label="Quantity"
-                  className="w-14 bg-transparent text-center text-sm tabular-nums text-ink-100 focus:outline-none"
+                  className="w-full bg-transparent text-center text-sm tabular-nums text-ink-100 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => q + 1)}
                   aria-label="Increase quantity"
-                  className="px-3.5 py-2.5 text-ink-300 transition-colors hover:text-gold-200"
+                  className="px-4 py-2.5 text-ink-300 transition-colors hover:text-gold-200"
                 >
                   +
                 </button>
               </div>
-
-              <input
-                type="text"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                placeholder="Coupon"
-                aria-label="Coupon code"
-                className="min-w-0 flex-1 rounded-xs border border-hairline bg-transparent px-3.5 text-sm uppercase text-ink-100 placeholder:normal-case placeholder:text-ink-500 focus:border-gold-300/50 focus:outline-none"
-              />
 
               <button
                 type="button"
@@ -565,15 +478,6 @@ export function Configurator() {
                 <RotateCcw size={15} />
               </button>
             </div>
-
-            {/* Nudge toward the next tier. A buyer who is 3 units short of a
-                bigger discount should be told, not left to work it out. */}
-            {nextTier && (
-              <p className="text-[0.68rem] text-gold-400">
-                Add {nextTier.minQty - breakdown.quantity} more to reach{" "}
-                {nextTier.discountBps / 100}% off.
-              </p>
-            )}
 
             {breakdown.warnings.length > 0 && (
               <ul className="space-y-1 pt-1">
@@ -594,8 +498,13 @@ export function Configurator() {
             >
               {missing.length > 0
                 ? `Choose ${missing[0].label}`
-                : "Review & Order"}
+                : "Request a Quote"}
             </Button>
+
+            <p className="pt-1 text-center text-[0.64rem] leading-relaxed text-ink-600">
+              Every run is priced individually — hides, quantity and freight all
+              move the number. An owner replies with a firm quote.
+            </p>
           </div>
         </div>
       </div>
@@ -611,27 +520,6 @@ export function Configurator() {
           onClose={() => setCheckoutOpen(false)}
         />
       )}
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between text-[0.75rem]">
-      <span className={accent ? "text-gold-400" : "text-ink-400"}>{label}</span>
-      <span
-        className={cn("tabular-nums", accent ? "text-gold-300" : "text-ink-300")}
-      >
-        {value}
-      </span>
     </div>
   );
 }
@@ -689,7 +577,6 @@ function OptionGroupControl({
 
   if (group.type === "text") {
     const value = texts[group.id] ?? "";
-    const charge = value.trim().replace(/\s+/g, "").length * (group.pricePerCharacter ?? 0);
     return (
       <div>
         <label
@@ -709,14 +596,9 @@ function OptionGroupControl({
           onChange={(e) => onText(group.id, e.target.value)}
           className="mt-3 w-full rounded-xs border border-hairline bg-ink-850 px-4 py-3 text-sm uppercase tracking-wider text-ink-100 focus:border-gold-300/50 focus:outline-none"
         />
-        <div className="mt-2 flex justify-between text-[0.65rem] text-ink-500">
-          <span>
-            {value.length} / {group.maxLength}
-          </span>
-          {charge > 0 && (
-            <span className="text-gold-400">+ {formatPrice(charge)}</span>
-          )}
-        </div>
+        <p className="mt-2 text-right text-[0.65rem] text-ink-500">
+          {value.length} / {group.maxLength}
+        </p>
       </div>
     );
   }
@@ -734,14 +616,11 @@ function OptionGroupControl({
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {group.options?.map((option) => {
           const selected = selections[group.id] === option.id;
-          const priceLabel =
-            option.price.kind === "add" && option.price.cents > 0
-              ? `+ ${formatPrice(option.price.cents)}`
-              : option.price.kind === "multiplyBase" && option.price.factor !== 1
-                ? `${option.price.factor > 1 ? "+" : "−"}${Math.abs(
-                    Math.round((option.price.factor - 1) * 100),
-                  )}%`
-                : "Included";
+          // No prices on the public site — an owner quotes each run. What a
+          // buyer still needs from an option is whether it delays production.
+          const noteLabel = option.leadTimeDays
+            ? `Adds ${option.leadTimeDays} days`
+            : null;
 
           return (
             <button
@@ -780,17 +659,16 @@ function OptionGroupControl({
                       {option.description}
                     </span>
                   )}
-                  <span
-                    className={cn(
-                      "mt-1.5 block text-[0.65rem] tabular-nums",
-                      selected ? "text-gold-300" : "text-ink-500",
-                    )}
-                  >
-                    {priceLabel}
-                    {option.leadTimeDays
-                      ? ` · +${option.leadTimeDays}d`
-                      : ""}
-                  </span>
+                  {noteLabel && (
+                    <span
+                      className={cn(
+                        "mt-1.5 block text-[0.65rem]",
+                        selected ? "text-gold-300" : "text-ink-500",
+                      )}
+                    >
+                      {noteLabel}
+                    </span>
+                  )}
                 </div>
                 {selected && (
                   <Check size={14} className="mt-0.5 shrink-0 text-gold-300" />

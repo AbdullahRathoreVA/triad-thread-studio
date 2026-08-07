@@ -13,6 +13,21 @@
 export const PLACEHOLDER = "__PLACEHOLDER__";
 
 /**
+ * Whether the public site quotes prices itself.
+ *
+ * OFF. This is a wholesale manufacturer: the real number depends on run size,
+ * hide availability, freight and the relationship, so it is set by an owner
+ * per enquiry rather than by a formula. The site captures the specification
+ * precisely and asks for a quote.
+ *
+ * The price engine is NOT deleted — it still runs, but only inside the admin,
+ * where it gives whoever is quoting an instant costed starting point they can
+ * override. Publishing a number the owners cannot honour is worse than
+ * publishing none.
+ */
+export const SHOW_PUBLIC_PRICING = false;
+
+/**
  * Fields that may still hold PLACEHOLDER are typed as plain `string`, not as
  * literals. With `as const` inference these narrow to the exact value once
  * filled in, and every `=== PLACEHOLDER` guard across the site becomes a

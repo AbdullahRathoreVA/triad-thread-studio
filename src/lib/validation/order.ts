@@ -108,12 +108,14 @@ export const orderRequestSchema = z.object({
   shipping: shippingSchema,
 
   /**
-   * What the browser believes the total is. NOT trusted — the server recomputes
-   * and rejects on mismatch. Its only purpose is to detect a stale price
-   * (config changed mid-session) and show the customer an honest error rather
-   * than silently charging a different number than the one they agreed to.
+   * Optional. Only sent when the site quotes prices publicly; the server then
+   * recomputes and rejects on mismatch so a customer is never charged a
+   * different number than the one they agreed to.
+   *
+   * With SHOW_PUBLIC_PRICING off this is absent: the request is a quote
+   * enquiry, and an owner sets the price afterwards.
    */
-  expectedTotalCents: z.number().int().min(0),
+  expectedTotalCents: z.number().int().min(0).optional(),
 
   /**
    * Honeypot. Real users never fill a hidden field.

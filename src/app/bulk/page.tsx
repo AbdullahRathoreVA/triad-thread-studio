@@ -20,6 +20,16 @@ export const metadata: Metadata = {
   },
 };
 
+/** Named bands rather than published percentages — the number is quoted. */
+const TIER_NAMES = [
+  "Standard",
+  "Trade",
+  "Volume",
+  "Programme",
+  "Contract",
+  "Partner",
+];
+
 const AUDIENCES = [
   {
     title: "Clothing brands",
@@ -50,9 +60,9 @@ const FAQS = [
   },
   {
     q: "How is bulk pricing calculated?",
-    a: `Discounts are applied to the order subtotal by tier: ${BULK_TIERS.slice(1)
-      .map((t) => `${t.minQty}+ units at ${t.discountBps / 100}%`)
-      .join(", ")}. The Custom Studio shows the exact figure live as you change quantity.`,
+    a: `Unit price improves at ${BULK_TIERS.slice(1)
+      .map((t) => `${t.minQty}`)
+      .join(", ")} units and again on larger programmes. We quote every run individually rather than publishing a rate card, because hide availability, finishing and freight all move the real number — send us the specification and quantity and you will have a firm figure the same working day.`,
   },
   {
     q: "Do you produce sample units before a full run?",
@@ -112,7 +122,7 @@ export default function BulkPage() {
             <Reveal>
               <p className="eyebrow">Volume Pricing</p>
               <h2 className="mt-6 max-w-2xl font-display text-4xl text-ink-50 md:text-5xl">
-                The discount is automatic, and it is visible before you commit.
+                Unit price improves as the run grows.
               </h2>
             </Reveal>
 
@@ -134,22 +144,20 @@ export default function BulkPage() {
                         scope="col"
                         className="pb-4 text-right font-roman text-[0.62rem] uppercase tracking-[0.2em] text-gold-300"
                       >
-                        Discount
+                        Tier
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {BULK_TIERS.map((tier) => (
+                    {BULK_TIERS.map((tier, i) => (
                       <tr key={tier.minQty} className="border-b border-hairline/60">
                         <td className="py-5 font-display text-2xl text-ink-100">
                           {tier.minQty === 1
                             ? "1 – 11"
                             : `${tier.minQty.toLocaleString()}+`}
                         </td>
-                        <td className="py-5 text-right font-display text-2xl tabular-nums text-gilt">
-                          {tier.discountBps === 0
-                            ? "—"
-                            : `${tier.discountBps / 100}%`}
+                        <td className="py-5 text-right font-display text-2xl text-gilt">
+                          {TIER_NAMES[i] ?? "Contract"}
                         </td>
                       </tr>
                     ))}
@@ -160,8 +168,9 @@ export default function BulkPage() {
 
             <Reveal delay={0.2}>
               <p className="mt-7 max-w-lg text-[0.8rem] leading-relaxed text-ink-500">
-                Applied to the order subtotal, before shipping and tax. Larger
-                or recurring programmes are quoted individually — talk to us.
+                Every run is quoted individually — hide availability, finishing
+                and freight all move the number, so we would rather give you a
+                real figure than a rate card we cannot honour.
               </p>
             </Reveal>
           </div>

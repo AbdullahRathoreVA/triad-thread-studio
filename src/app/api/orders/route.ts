@@ -92,7 +92,12 @@ export async function POST(request: Request) {
       coupons,
     );
 
-    if (price.totalCents !== input.expectedTotalCents) {
+    // Only enforced when the browser actually quoted a price. Without public
+    // pricing the computed figure is an internal estimate for whoever quotes.
+    if (
+      input.expectedTotalCents !== undefined &&
+      price.totalCents !== input.expectedTotalCents
+    ) {
       return NextResponse.json(
         {
           error: "Pricing has changed since you started. Please review the total.",

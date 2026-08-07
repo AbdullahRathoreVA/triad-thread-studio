@@ -132,7 +132,6 @@ export function Checkout({
           specialInstructions: values.specialInstructions || undefined,
           customer: values.customer,
           shipping: values.shipping,
-          expectedTotalCents: breakdown.totalCents,
         }),
       });
 
@@ -175,25 +174,25 @@ export function Checkout({
       : `${confirmation.leadTimeDays} working days`;
 
     return (
-      <Shell onClose={onClose} title="Order confirmed">
+      <Shell onClose={onClose} title="Request received">
         <div className="mx-auto max-w-md py-10 text-center">
           <div className="mx-auto grid size-14 place-items-center rounded-full border border-gold-300/40">
             <Check className="text-gold-300" size={22} />
           </div>
 
           <h3 className="mt-8 font-display text-3xl text-ink-50">
-            Thank you — production is scheduled.
+            Thank you — we have your specification.
           </h3>
           <p className="mt-4 text-sm leading-relaxed text-ink-400">
-            A confirmation has been sent to your email. Quote your order number
-            in any correspondence.
+            A copy has been sent to your email. An owner will review the
+            specification and reply with a firm quote, usually the same working
+            day.
           </p>
 
           <dl className="mt-9 divide-y divide-hairline border-y border-hairline text-left">
-            <Row label="Order number" value={confirmation.orderNumber} mono />
+            <Row label="Reference" value={confirmation.orderNumber} mono />
             <Row label="Design reference" value={confirmation.designCode} mono />
-            <Row label="Total" value={formatPrice(confirmation.totalCents)} />
-            <Row label="Estimated dispatch" value={ship} />
+                        <Row label="Est. production" value={ship} />
           </dl>
 
           <Button variant="outline" className="mt-9" onClick={onClose}>
@@ -208,7 +207,7 @@ export function Checkout({
   /* Review + form                                                    */
   /* ---------------------------------------------------------------- */
   return (
-    <Shell onClose={onClose} title="Review your order">
+    <Shell onClose={onClose} title="Review your specification">
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="grid gap-12 py-8 lg:grid-cols-[1fr_380px]"
@@ -373,62 +372,24 @@ export function Checkout({
               </>
             )}
 
-            <div className="mt-7 border-t border-hairline pt-5">
-              <ul className="space-y-1.5">
-                {breakdown.lineItems.map((item) => (
-                  <li
-                    key={item.id + item.label}
-                    className="flex justify-between gap-4 text-[0.75rem]"
-                  >
-                    <span className="text-ink-400">{item.label}</span>
-                    <span className="shrink-0 tabular-nums text-ink-300">
-                      {formatPrice(item.cents)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-4 space-y-1.5 border-t border-hairline pt-4 text-[0.75rem]">
-                <SummaryRow
-                  label={`Unit × ${breakdown.quantity}`}
-                  value={formatPrice(breakdown.subtotalCents)}
-                />
-                {breakdown.bulkDiscountCents > 0 && (
-                  <SummaryRow
-                    label={breakdown.bulkTier.label}
-                    value={`− ${formatPrice(breakdown.bulkDiscountCents)}`}
-                    accent
-                  />
-                )}
-                {breakdown.couponDiscountCents > 0 && (
-                  <SummaryRow
-                    label={`Coupon ${breakdown.couponCode}`}
-                    value={`− ${formatPrice(breakdown.couponDiscountCents)}`}
-                    accent
-                  />
-                )}
-                <SummaryRow
-                  label="Shipping"
-                  value={
-                    breakdown.shippingCents === 0
-                      ? "Included"
-                      : formatPrice(breakdown.shippingCents)
-                  }
-                />
-              </div>
-
-              <div className="mt-5 flex items-end justify-between border-t border-hairline pt-5">
-                <div>
-                  <p className="eyebrow">Total</p>
-                  <p className="mt-1 text-[0.68rem] text-ink-500">
-                    Est. {breakdown.leadTimeDays} working days
-                  </p>
-                </div>
-                <p className="font-display text-3xl tabular-nums text-gilt">
-                  {formatPrice(breakdown.totalCents)}
-                </p>
-              </div>
+            <div className="mt-7 space-y-2 border-t border-hairline pt-5 text-[0.75rem]">
+              <SummaryRow label="Quantity" value={breakdown.quantity.toLocaleString()} />
+              <SummaryRow
+                label="Est. production"
+                value={`${breakdown.leadTimeDays} working days`}
+              />
+              <SummaryRow
+                label="Delivery"
+                value={destination === "domestic" ? "Domestic" : "International"}
+              />
             </div>
+
+            <p className="mt-6 border-t border-hairline pt-5 text-[0.75rem] leading-relaxed text-ink-400">
+              We price each run individually. Hide availability, quantity,
+              finishing and freight all move the number, so an owner reviews
+              this specification and sends you a firm quote — usually the same
+              working day.
+            </p>
           </div>
 
           {repricedTo !== null && (
@@ -468,13 +429,13 @@ export function Checkout({
             ) : repricedTo !== null ? (
               "Confirm at new price"
             ) : (
-              "Place order"
+              "Send quote request"
             )}
           </Button>
 
           <p className="mt-3 text-center text-[0.68rem] leading-relaxed text-ink-600">
-            No payment is taken now. We confirm your specification and invoice
-            before production begins.
+            No payment is taken and nothing is committed. This sends your
+            specification for pricing.
           </p>
         </aside>
       </form>

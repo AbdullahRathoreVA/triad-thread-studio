@@ -117,3 +117,57 @@ export function mix(a: number, b: number, t: number): number {
   const k = Math.max(0, Math.min(1, t));
   return a + (b - a) * (k * k * (3 - 2 * k));
 }
+
+/**
+ * A tube swept along an arbitrary path.
+ *
+ * `section()` always builds its ring in the horizontal plane, which is correct
+ * for a torso but wrong for anything diagonal: on a sleeve that runs down and
+ * outward, consecutive horizontal rings shear past each other and the result
+ * renders as a flat ribbon rather than a limb. This builds each ring on a
+ * frame perpendicular to the local path direction, so the cross-section stays
+ * circular whichever way the path turns.
+ */
+export function tube(
+  points: THREE.Vector3[],
+  radiusAt: (t: number) => number,
+  radial = 24,
+  flatten = 0.92,
+): THREE.BufferGeometry {
+  const rings: THREE.Vector3[][] = [];
+  const up = new THREE.Vector3(0, 1, 0);
+
+  for (let i = 0; i < points.length; i++) {
+    const t = i / (points.length - 1);
+
+    const tangent = (
+      i === 0
+        ? points[1].clone().sub(points[0])
+        : points[i].clone().sub(points[i - 1])
+    ).normalize();
+
+    // Degenerate when the path runs straight up; fall back to a fixed axis.
+    let normal = new THREE.Vector3().crossVectors(tangent, up);
+    if (normal.lengthSq() < 1e-6) normal = new THREE.Vector3(1, 0, 0);
+    normal.normalize();
+
+    const binormal = new THREE.Vector3()
+      .crossVectors(tangent, normal)
+      .normalize();
+
+    const r = radiusAt(t);
+    const ring: THREE.Vector3[] = [];
+    for (let j = 0; j < radial; j++) {
+      const a = (j / radial) * Math.PI * 2;
+      ring.push(
+        points[i]
+          .clone()
+          .addScaledVector(normal, Math.cos(a) * r)
+          .addScaledVector(binormal, Math.sin(a) * r * flatten),
+      );
+    }
+    rings.push(ring);
+  }
+
+  return loft(rings, { capEnd: true });
+}

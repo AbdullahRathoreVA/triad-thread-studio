@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { createFabricMaps } from "@/lib/three/leather-texture";
-import { loft, section, mix } from "@/lib/three/loft";
+import { loft, section, tube, mix } from "@/lib/three/loft";
 
 /**
  * A sublimated jersey, lofted from cross-sections like the jacket but with a
@@ -91,7 +91,7 @@ export function JerseyModel({
   );
 
   const { body, sleeveL, sleeveR, collarRing } = useMemo(() => {
-    const L = 2.3;
+    const L = 2.0;
     const halfL = L / 2;
 
     const rings: THREE.Vector3[][] = [];
@@ -128,23 +128,24 @@ export function JerseyModel({
 
     // --- Sleeves --------------------------------------------------------
     const sleeveLength =
-      appearance.sleeve === "long" ? 1.25 : appearance.sleeve === "sleeveless" ? 0.1 : 0.5;
+      appearance.sleeve === "long" ? 1.15 : appearance.sleeve === "sleeveless" ? 0.12 : 0.46;
 
     const buildSleeve = (side: 1 | -1) => {
-      const segs = 10;
-      const out: THREE.Vector3[][] = [];
+      const pts: THREE.Vector3[] = [];
+      const segs = 8;
       for (let i = 0; i <= segs; i++) {
         const t = i / segs;
-        // Set into the shoulder and angled DOWN and out, the way a sleeve
-        // actually hangs — not straight out sideways.
-        const x = side * (0.78 + t * (0.42 + sleeveLength * 0.22));
-        const y = halfL - 0.06 - t * sleeveLength;
-        const r = mix(0.33, appearance.sleeve === "long" ? 0.17 : 0.27, t);
-        out.push(
-          section({ radial: RADIAL, rx: r, rz: r * 0.9, y, centreX: x, power: 2.1 }),
+        pts.push(
+          // Same reasoning as the jacket: a sleeve that drops straight down
+          // disappears into the torso silhouette.
+          new THREE.Vector3(
+            side * (0.72 + t * 0.78),
+            halfL - 0.12 - t * sleeveLength * 0.72,
+            0,
+          ),
         );
       }
-      return loft(out, { capEnd: true });
+      return tube(pts, (t) => mix(0.32, appearance.sleeve === "long" ? 0.17 : 0.26, t), RADIAL);
     };
 
     // --- Neck rib -------------------------------------------------------
@@ -186,7 +187,7 @@ export function JerseyModel({
       <mesh geometry={collarRing} material={accent} />
 
       {/* Hem band, sitting flush at the bottom edge of the body. */}
-      <mesh material={accent} position={[0, -1.15 + 0.035, 0]}>
+      <mesh material={accent} position={[0, -1.0 + 0.03, 0]}>
         <cylinderGeometry args={[0.972, 0.972, 0.07, RADIAL, 1, true]} />
       </mesh>
     </group>

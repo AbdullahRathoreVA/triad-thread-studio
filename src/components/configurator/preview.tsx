@@ -13,8 +13,9 @@ import type { ProductType } from "@/config/configurator";
 function StudioRig() {
   return (
     <Environment resolution={256} frames={1}>
-      <Lightformer form="rect" intensity={3.4} color="#fff6e8" position={[-3.6, 3, 4]} scale={[6, 5, 1]} target={[0, 0, 0]} />
-      <Lightformer form="rect" intensity={4.2} color="#b79976" position={[4.4, 0.6, 2.4]} scale={[2, 6, 1]} target={[0, 0, 0]} />
+      <Lightformer form="rect" intensity={4.6} color="#fff6e8" position={[-3, 3.2, 4]} scale={[6, 5, 1]} target={[0, 0, 0]} />
+      <Lightformer form="rect" intensity={9} color="#d8b98a" position={[4.4, 0.8, 1.2]} scale={[1.6, 7, 1]} target={[0, 0, 0]} />
+      <Lightformer form="rect" intensity={7} color="#9fb4d8" position={[-4.4, 0.4, 1.0]} scale={[1.4, 7, 1]} target={[0, 0, 0]} />
       <Lightformer form="rect" intensity={1.6} color="#d8dadd" position={[-3, -2.6, 2.4]} scale={[4, 2, 1]} target={[0, 0, 0]} />
       <Lightformer form="ring" intensity={0.55} color="#4a4238" position={[0, 5, -3]} scale={[8, 8, 1]} />
     </Environment>
@@ -67,7 +68,7 @@ export function ConfiguratorPreview({
   return (
     <Canvas
       className="absolute inset-0"
-      camera={{ position: [0, 0.1, 4.6], fov: 38 }}
+      camera={{ position: [0, 0.1, 5.4], fov: 36 }}
       dpr={[1, 1.75]}
       shadows
       gl={{
@@ -75,11 +76,17 @@ export function ConfiguratorPreview({
         alpha: true,
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.1,
+        toneMappingExposure: 1.35,
       }}
     >
       <Suspense fallback={null}>
         <StudioRig />
+        {/* Lit backdrop. A dark hide on a black set has no readable
+            silhouette — the eye only sees the lit centre strip. */}
+        <mesh position={[0, 0, -3.4]}>
+          <planeGeometry args={[26, 18]} />
+          <meshBasicMaterial color="#241a14" />
+        </mesh>
         {productType === "jersey" ? (
           <JerseyModel appearance={jerseyAppearance} autoRotate={autoRotate} />
         ) : (

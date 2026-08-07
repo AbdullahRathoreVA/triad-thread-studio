@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { createLeatherMaps } from "@/lib/three/leather-texture";
-import { loft, section, mix } from "@/lib/three/loft";
+import { loft, section, tube, mix } from "@/lib/three/loft";
 
 /**
  * A jacket lofted from cross-sections.
@@ -155,33 +155,31 @@ export function JacketModel({
 
     // ---- Sleeves --------------------------------------------------------
     // Lofted along an arc from the shoulder, tapering to the cuff.
+    // Swept along a path with perpendicular framing. Horizontal rings on a
+    // diagonal sleeve shear into a flat ribbon rather than a limb.
     const buildSleeve = (side: 1 | -1) => {
-      const rings: THREE.Vector3[][] = [];
-      const SEG = 16;
-      const shoulderX = side * (0.92 + looseness * 0.3);
-      const shoulderY = halfL - 0.12;
-
-      for (let i = 0; i <= SEG; i++) {
-        const t = i / SEG;
-        // Slight outward then downward sweep — a hanging sleeve, not a plank.
-        const x = shoulderX + side * (0.28 * Math.sin(t * 1.15));
-        const y = shoulderY - t * (L * 0.86);
-        const z = Math.sin(t * 2.2) * 0.07;
-        const r = mix(0.3 + looseness * 0.08, 0.155 + looseness * 0.05, t);
-
-        rings.push(
-          section({
-            radial: RADIAL,
-            rx: r,
-            rz: r * 0.92,
-            y,
-            centreX: x,
-            centreZ: z,
-            power: 2.2,
-          }),
+      const shoulderX = side * (0.9 + looseness * 0.28);
+      const pts: THREE.Vector3[] = [];
+      const segs = 12;
+      for (let i = 0; i <= segs; i++) {
+        const t = i / segs;
+        // Sleeves must swing OUT, not hang against the body. Measured torso
+        // is 1.25:1, which is correct — but with near-vertical sleeves the
+        // whole silhouette collapses to the torso width and reads as a column.
+        // A jacket on a hanger carries its sleeves at roughly 35 degrees.
+        pts.push(
+          new THREE.Vector3(
+            shoulderX + side * (0.95 * Math.sin(t * 1.45)),
+            halfL - 0.1 - t * (L * 0.62),
+            Math.sin(t * 1.6) * 0.1,
+          ),
         );
       }
-      return loft(rings, { capEnd: true });
+      return tube(
+        pts,
+        (t) => mix(0.3 + looseness * 0.07, 0.155 + looseness * 0.04, t),
+        RADIAL,
+      );
     };
 
     // ---- Lapels ---------------------------------------------------------
@@ -260,30 +258,6 @@ export function JacketModel({
           scale={[side, 1, 1]}
           castShadow
         />
-      ))}
-
-      {/* Cuffs */}
-      {[-1, 1].map((side) => (
-        <mesh
-          key={side}
-          material={leather}
-          position={[
-            side * (0.92 + appearance.looseness * 0.3 + 0.25),
-            halfL - 0.12 - appearance.bodyLength * 0.84,
-            0.05,
-          ]}
-        >
-          <cylinderGeometry
-            args={[
-              0.175 + appearance.looseness * 0.05,
-              0.165 + appearance.looseness * 0.05,
-              0.13,
-              28,
-              1,
-              true,
-            ]}
-          />
-        </mesh>
       ))}
 
       {/* Chest and hip pocket zips — small, but their absence is conspicuous. */}

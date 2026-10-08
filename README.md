@@ -143,3 +143,7 @@ are not used anywhere. See [docs/ASSETS.md](docs/ASSETS.md).
 - [docs/ASSETS.md](docs/ASSETS.md) — photography requirements
 - [docs/ADMIN.md](docs/ADMIN.md) — admin login, access and what it does
 - [docs/ROADMAP.md](docs/ROADMAP.md) — what remains
+
+## Case study
+
+Screenshots, the brief and the problems worth describing: [docs/CASE_STUDY.md](docs/CASE_STUDY.md).
